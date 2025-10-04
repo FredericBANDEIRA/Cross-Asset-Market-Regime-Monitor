@@ -1,0 +1,10 @@
+Quick Wins - Start With These:
+If you're overwhelmed, prioritize:
+
+VIX for volatility (most important missing piece)
+
+DGS10 and DE10Y for yield curves
+
+TIP for inflation-linked bonds
+
+UNRATE for additional growth indicator

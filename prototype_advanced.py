@@ -165,6 +165,48 @@ for ticker, filename in tickers_and_files.items():
 
     all_assets_cumulative[ticker] = cumulative_returns[ticker]
 
+column_rename = {
+    "SPY": "US_Equities",
+    "TLT": "US_Treasuries",     # More descriptive than "Bonds"
+    "GC=F": "Gold", 
+    "CL=F": "Crude_Oil",
+    "ZW=F": "Wheat",
+    "DX=F": "USD_Index"
+}
+
+# Rename your DataFrame columns
+all_assets_cumulative = all_assets_cumulative.rename(columns=column_rename)
+
+
+# -------------------------
+# 3. Download volatility data (VIX) from Yahoo Finance
+# -------------------------
+
+start_date = "2000-01-01"
+end_date = "2025-09-09"
+
+vix_data = download_yfinance_close("^VIX", start=start_date, end=end_date)
+
+save_csv(vix_data, "vix.csv")
+vix_df = pd.read_csv("vix.csv", skiprows=3, names=['Date', 'VIX'])
+vix_df.to_csv("vix.csv", index=False)
+
+# -------------------------
+# 4. Download yields from FRED (best source for historical yields)
+# -------------------------
+
+start_date = "2000-01-01"
+end_date = "2025-09-09"
+
+fred_series = fred_tickers = [
+    "DGS1MO", "DGS3MO", "DGS6MO",  # Short-term
+    "DGS1", "DGS2", "DGS3",        # Medium-term  
+    "DGS5", "DGS7", "DGS10",       # Long-term
+    "DGS20", "DGS30"               # Very long-term
+]
+macroeconomic_data = download_fred(fred_series, start=start_date)
+save_csv(macroeconomic_data, "sovereign_yields.csv")
+
 # -------------------------
 # 3. Separate visualizations
 # -------------------------
