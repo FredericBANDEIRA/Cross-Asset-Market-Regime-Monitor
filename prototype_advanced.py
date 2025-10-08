@@ -166,12 +166,12 @@ for ticker, filename in tickers_and_files.items():
     all_assets_cumulative[ticker] = cumulative_returns[ticker]
 
 column_rename = {
-    "SPY": "US_Equities",
-    "TLT": "US_Treasuries",     # More descriptive than "Bonds"
+    "SPY": "US Equities",
+    "TLT": "US Treasuries",     # More descriptive than "Bonds"
     "GC=F": "Gold", 
-    "CL=F": "Crude_Oil",
+    "CL=F": "Crude Oil",
     "ZW=F": "Wheat",
-    "DX=F": "USD_Index"
+    "DX=F": "USD Index"
 }
 
 # Rename your DataFrame columns
@@ -199,12 +199,13 @@ start_date = "2000-01-01"
 end_date = "2025-09-09"
 
 fred_series = fred_tickers = [
-    "DGS1MO", "DGS3MO", "DGS6MO",  # Short-term
+    "DTB4WK", "DGS3MO", "DGS6MO",  # Short-term (for the 1-month Treasury: DGS1MO is not available)
     "DGS1", "DGS2", "DGS3",        # Medium-term  
     "DGS5", "DGS7", "DGS10",       # Long-term
     "DGS20", "DGS30"               # Very long-term
 ]
 macroeconomic_data = download_fred(fred_series, start=start_date)
+macroeconomic_data = forward_fill_only(macroeconomic_data.asfreq('D')) # asfreq to get daily frequency
 save_csv(macroeconomic_data, "sovereign_yields.csv")
 
 # -------------------------
