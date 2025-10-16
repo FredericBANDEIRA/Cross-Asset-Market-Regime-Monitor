@@ -53,28 +53,13 @@ max_date = yields_us.index[-1]
 with st.sidebar:
     selected_assets = st.multiselect("Please select your assets", assets)
     range_start, range_end = st.date_input("Select date range", value= (min_date_range, max_date_range))
-    fixed_date = st.date_input("Select one date", value= (max_date), min_value=min_date, max_value=max_date)
+    # fixed_date = st.date_input("Select one date", value= (max_date), min_value=min_date, max_value=max_date)
        
 fig0 = px.line(macro_trends[range_start : range_end]).update_layout(
     xaxis_title="Date", 
     yaxis_title="Levels")
 st.plotly_chart(fig0)
 
-# fig0 = plt.figure(figsize=(10,5))
-# plt.plot(macro_trends[range_start : range_end], label = macro_trends.columns)
-# plt.legend()
-# plt.title("Macro Trends")
-# plt.xlabel("Date")
-# plt.ylabel("Levels")
-
-# st.pyplot(fig0)
-
-# fig1 = plt.figure(figsize=(10,5))
-# plt.plot(cum_returns[range_start : range_end], label = cum_returns.columns)
-# plt.legend()
-# plt.title("Cumulative Returns")
-# plt.xlabel("Date")
-# plt.ylabel("Cumulative Returns")
 
 # st.dataframe(cum_returns)
 fig1 = px.line(cum_returns[range_start : range_end]).update_layout(
@@ -107,6 +92,13 @@ st.plotly_chart(fig3)
 
 # To create the yield curve
 # Define maturity in months for proper spacing
+fixed_date = st.slider(
+    "Select date:",  # 
+    value=max_date.to_pydatetime(),
+    min_value=min_date.to_pydatetime(),
+    max_value=max_date.to_pydatetime()
+)
+
 maturity_months = {
     'DTB4WK': 1/12, 'DGS3MO': 3/12, 'DGS6MO': 6/12,
     'DGS1': 1, 'DGS2': 2, 'DGS3': 3,
@@ -185,20 +177,6 @@ for i, period in enumerate(plot_data['Period'].unique()):
 st.plotly_chart(fig4)
 
 
-# data = pd.read_csv("all_data.csv", index_col=0, delimiter=';')
-# data = data.ffill().dropna()
-# returns = data.pct_change()
-# cum_returns = (1 + returns).cumprod()
-# cum_returns.index = pd.to_datetime(cum_returns.index) # ensure datetime index
-# assets = cum_returns.columns
-# min_date_range = cum_returns.index[0]
-# max_date_range = cum_returns.index[-1]
-
-# with st.sidebar:
-#     selected_assets = st.multiselect("Please select your assets", assets)
-#     range_start, range_end = st.date_input("Select date range", value= (min_date_range, max_date_range))
-#     fixed_date = st.date_input("Select one date", value= (max_date), min_value=min_date, max_value=max_date)
-
 fig5 = px.imshow([[1, 20, 30],
                  [20, 1, 60],
                  [30, 60, 1]])
@@ -209,3 +187,5 @@ print(cum_returns.index[2])
 # print(cum_returns.loc[range_start])
 st.plotly_chart(fig5)
 print("test")
+
+
