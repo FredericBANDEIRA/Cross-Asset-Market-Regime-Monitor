@@ -10,6 +10,7 @@ matplotlib.use("Agg")
 import plotly.express as px # for interactive plots
 from datetime import timedelta
 import datetime
+import numpy as np
 
 title = "Cross Asset Regime Monitor"
 st.set_page_config(title, layout="wide")
@@ -53,7 +54,6 @@ max_date = yields_us.index[-1]
 with st.sidebar:
     selected_assets = st.multiselect("Please select your assets", assets)
     range_start, range_end = st.date_input("Select date range", value= (min_date_range, max_date_range))
-    # fixed_date = st.date_input("Select one date", value= (max_date), min_value=min_date, max_value=max_date)
        
 fig0 = px.line(macro_trends[range_start : range_end]).update_layout(
     xaxis_title="Date", 
@@ -71,14 +71,6 @@ st.plotly_chart(fig1)
 # If some assets are selected, plot them
 if selected_assets:
 
-    # fig2 = plt.figure(figsize=(10,5))
-    # plt.plot(cum_returns[range_start : range_end][selected_assets], label = cum_returns[selected_assets].columns)
-    # plt.legend()
-    # plt.title("Cumulative Returns")
-    # plt.xlabel("Date")
-    # plt.ylabel("Selected Assets")
-
-    # st.pyplot(fig2)
     fig2 = px.line(cum_returns[range_start : range_end][selected_assets]).update_layout(
     xaxis_title="Date", 
     yaxis_title="Price")
@@ -176,16 +168,35 @@ for i, period in enumerate(plot_data['Period'].unique()):
 
 st.plotly_chart(fig4)
 
+heat_rets =[]
+for i in assets:
+    heat_rets.append(cum_returns.loc[pd.Timestamp(range_end), i] / cum_returns.loc[pd.Timestamp(range_start), i] - 1)
 
-fig5 = px.imshow([[1, 20, 30],
-                 [20, 1, 60],
-                 [30, 60, 1]])
-print(range_start, range_end)
-print(type(range_start))
-# print(type(cum_returns[pd.to_datetime(range_start)]))
-print(cum_returns.index[2])
-# print(cum_returns.loc[range_start])
+# Calculate symmetric range around zero
+abs_max = max(abs(min(heat_rets)), abs(max(heat_rets)))
+# Add a small buffer to ensure zero is clearly in the middle
+buffer = abs_max * 0.1
+zmin = -abs_max - buffer
+zmax = abs_max + buffer
+
+custom_scale = [
+    [0.0, '#dc2626'],    # Dark red for negative
+    [0.5, '#ffffff'],    # White for zero
+    [1.0, '#16a34a']     # Dark green for positive
+]
+
+label_matrix = np.array([cum_returns.columns[:3], cum_returns.columns[3:6]])
+
+fig5 = px.imshow([[heat_rets[0], heat_rets[1], heat_rets[2]],
+                 [heat_rets[3], heat_rets[4], heat_rets[5]]],
+                color_continuous_scale=custom_scale,
+                zmin=-1,
+                zmax=1
+).update_traces(text=label_matrix, 
+                   texttemplate="<b>%{text}</b>",
+                   textfont=dict(size=16, color="black", family="Raleway")  # Added weight="bold"
+).update_layout(
+    xaxis=dict(showticklabels=False, showgrid=False, title=""),
+    yaxis=dict(showticklabels=False, showgrid=False, title="")
+)
 st.plotly_chart(fig5)
-print("test")
-
-
