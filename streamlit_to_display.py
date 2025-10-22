@@ -54,7 +54,23 @@ max_date = yields_us.index[-1]
 with st.sidebar:
     selected_assets = st.multiselect("Please select your assets", assets)
     range_start, range_end = st.date_input("Select date range", value= (min_date_range, max_date_range))
-       
+
+# Typical regime framework at major banks
+REGIME_FRAMEWORK = {
+    "Goldilocks": {"growth": "above_trend", "inflation": "contained"},
+    "Overheating": {"growth": "above_trend", "inflation": "rising"}, 
+    "Stagflation": {"growth": "below_trend", "inflation": "rising"},
+    "Reflation": {"growth": "improving", "inflation": "low"},
+    "Deflation": {"growth": "weak", "inflation": "falling"}
+}
+# Conservative thresholds for academic project
+REGIME_THRESHOLDS = {
+    'growth_above_trend': 2.0,      # GDP > 2.0%
+    'growth_below_trend': 1.0,      # GDP < 1.0%  
+    'inflation_rising': 2.5,        # CPI > 2.5%
+    'inflation_low': 1.5,           # CPI < 1.5%
+}
+
 fig0 = px.line(macro_trends[range_start : range_end]).update_layout(
     xaxis_title="Date", 
     yaxis_title="Levels")
