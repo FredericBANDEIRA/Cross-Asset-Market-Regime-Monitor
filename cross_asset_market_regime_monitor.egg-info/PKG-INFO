@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: cross-asset-market-regime-monitor
+Version: 0.1.0
+Summary: Dashboard visualizing market performance across asset classes and market regimes, including regime indicators, term structures, and yield curves.
+Author: BANDEIRA Frédéric
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pandas
+Requires-Dist: yfinance
+Requires-Dist: pandas-datareader
+Requires-Dist: matplotlib
+Requires-Dist: streamlit
+Requires-Dist: plotly
+Requires-Dist: numpy
+Requires-Dist: python-dateutil
+Requires-Dist: setuptools
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+
+# Cross-Asset-Market-Regime-Monitor
+The dashboard visualizes the market performance of each asset class across different market regimes. It includes indicators of the current market regime, term structures of equity, gold, crude oil, wheat, and dollar futures, as well as the yield curves of US and German bonds.

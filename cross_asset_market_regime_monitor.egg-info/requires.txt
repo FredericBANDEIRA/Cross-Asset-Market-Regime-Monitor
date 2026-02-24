@@ -1,0 +1,12 @@
+pandas
+yfinance
+pandas-datareader
+matplotlib
+streamlit
+plotly
+numpy
+python-dateutil
+setuptools
+
+[dev]
+pytest

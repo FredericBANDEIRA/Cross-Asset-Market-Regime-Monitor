@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cross-asset-market-regime-monitor"
+version = "0.1.0"
+description = "Dashboard visualizing market performance across asset classes and market regimes, including regime indicators, term structures, and yield curves."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "BANDEIRA Frédéric" },
+]
+
+dependencies = [
+    "pandas",
+    "yfinance",
+    "pandas-datareader",
+    "matplotlib",
+    "streamlit",
+    "plotly",
+    "numpy",
+    "python-dateutil",
+    "setuptools",
+]
+
+[tool.setuptools]
+packages = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
