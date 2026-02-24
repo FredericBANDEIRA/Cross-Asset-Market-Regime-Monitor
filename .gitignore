@@ -1,10 +1,30 @@
-"venv/" 
 # Virtual environments
-venv/
 .venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# VS Code
-.vscode/
+# Generated data files (reproduced by `python data_collection.py`)
+*.csv
+
+# Dependency lock (uv)
+uv.lock
+
+# OS
+.DS_Store
+Thumbs.db

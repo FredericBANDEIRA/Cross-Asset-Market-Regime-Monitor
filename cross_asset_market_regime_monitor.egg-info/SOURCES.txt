@@ -1,9 +1,0 @@
-README.md
-pyproject.toml
-cross_asset_market_regime_monitor.egg-info/PKG-INFO
-cross_asset_market_regime_monitor.egg-info/SOURCES.txt
-cross_asset_market_regime_monitor.egg-info/dependency_links.txt
-cross_asset_market_regime_monitor.egg-info/requires.txt
-cross_asset_market_regime_monitor.egg-info/top_level.txt
-tests/test_data_collection.py
-tests/test_regime.py

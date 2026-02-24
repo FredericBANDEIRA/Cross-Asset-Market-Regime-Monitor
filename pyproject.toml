@@ -22,6 +22,7 @@ dependencies = [
     "numpy",
     "python-dateutil",
     "setuptools",
+    "requests",
 ]
 
 [tool.setuptools]

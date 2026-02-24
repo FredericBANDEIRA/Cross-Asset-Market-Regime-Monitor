@@ -2,6 +2,8 @@ import pandas as pd
 import yfinance as yf
 import pandas_datareader.data as dr
 import datetime
+import io
+import requests
 from dateutil.relativedelta import relativedelta
 
 # -----------------------------
@@ -22,22 +24,49 @@ ASSETS = {
     "DX=F": "Dollar",
 }
 
-# Yield curves: US and German [cite: 6, 14]
-YIELD_SERIES = {
-    "US": [
-        "DTB4WK",
-        "DGS3MO",
-        "DGS6MO",  # Short-term (for the 1-month Treasury: DGS1MO is not available)
-        "DGS1",
-        "DGS2",
-        "DGS3",  # Medium-term
-        "DGS5",
-        "DGS7",
-        "DGS10",  # Long-term
-        "DGS20",
-        "DGS30",  # Very long-term
-    ],
-    "GER": ["IRLTLT01DEM156N"],  # German 10Y (Long-term)
+# US Treasury yield curve maturities (FRED)
+YIELD_SERIES_US = [
+    "DTB4WK",
+    "DGS3MO",
+    "DGS6MO",
+    "DGS1",
+    "DGS2",
+    "DGS3",
+    "DGS5",
+    "DGS7",
+    "DGS10",
+    "DGS20",
+    "DGS30",
+]
+
+# ECB yield curve maturities to fetch
+ECB_MATURITIES = [
+    "SR_3M",
+    "SR_6M",
+    "SR_1Y",
+    "SR_2Y",
+    "SR_3Y",
+    "SR_5Y",
+    "SR_7Y",
+    "SR_10Y",
+    "SR_15Y",
+    "SR_20Y",
+    "SR_30Y",
+]
+
+# Map ECB maturity codes to numeric years
+ECB_MATURITY_YEARS = {
+    "SR_3M": 0.25,
+    "SR_6M": 0.5,
+    "SR_1Y": 1,
+    "SR_2Y": 2,
+    "SR_3Y": 3,
+    "SR_5Y": 5,
+    "SR_7Y": 7,
+    "SR_10Y": 10,
+    "SR_15Y": 15,
+    "SR_20Y": 20,
+    "SR_30Y": 30,
 }
 
 # -----------------------------
@@ -47,15 +76,20 @@ YIELD_SERIES = {
 
 def fetch_data(tickers, source="yahoo"):
     """Unified downloader for better error handling."""
-    if source == "yahoo":
-        # Using list(tickers.keys()) for efficiency
-        df = yf.download(
-            list(tickers.keys()), start=START_DATE, end=END_DATE, progress=False
-        )["Close"]
-        return df.rename(columns=tickers)
-    elif source == "fred":
-        df = dr.DataReader(tickers, "fred", START_DATE)
-        return df
+    try:
+        if source == "yahoo":
+            df = yf.download(
+                list(tickers.keys()), start=START_DATE, end=END_DATE, progress=False
+            )["Close"]
+            return df.rename(columns=tickers)
+        elif source == "fred":
+            df = dr.DataReader(tickers, "fred", START_DATE)
+            return df
+        else:
+            raise ValueError(f"Unknown data source: {source}")
+    except Exception as e:
+        print(f"  ✗ Failed to fetch {source} data: {e}")
+        return pd.DataFrame()
 
 
 def process_returns(df):
@@ -64,13 +98,6 @@ def process_returns(df):
     returns = cleaned.pct_change()
     cumulative = (1 + returns).cumprod()
     return cumulative
-
-
-def process_macro_regimes(macro_df):
-    """Calculate YoY changes to determine economic momentum."""
-    # GDP is quarterly, CPI is monthly; we calculate % change from 1 year ago
-    macro_yoy = macro_df.pct_change(periods=12).dropna()
-    return macro_yoy
 
 
 # CME month codes: F=Jan, G=Feb, H=Mar, J=Apr, K=May, M=Jun,
@@ -141,6 +168,45 @@ def fetch_futures_term_structure(n_months=8):
     return df
 
 
+def fetch_ecb_yield_curves():
+    """
+    Fetch Eurozone government bond yield curves from the ECB Data Portal.
+    Returns two DataFrames:
+    - AAA-rated curve (≈ German Bunds)
+    - All-rated curve (broader composite, includes France-level credits)
+    Each row = one date, columns = maturity in years.
+    """
+    mats = "+".join(ECB_MATURITIES)
+    base = "https://data-api.ecb.europa.eu/service/data/YC"
+    results = {}
+
+    for label, instrument in [
+        ("Eurozone AAA (≈ Germany)", "G_N_A"),
+        ("Eurozone All (≈ France)", "G_N_C"),
+    ]:
+        url = f"{base}/B.U2.EUR.4F.{instrument}.SV_C_YM.{mats}?startPeriod={START_DATE}&format=csvdata"
+        try:
+            resp = requests.get(url, timeout=60)
+            resp.raise_for_status()
+            raw = pd.read_csv(io.StringIO(resp.text))
+            # Pivot: rows=date, columns=maturity, values=yield
+            pivot = raw.pivot_table(
+                index="TIME_PERIOD", columns="DATA_TYPE_FM", values="OBS_VALUE"
+            )
+            # Rename columns from SR_10Y -> 10 (years)
+            pivot = pivot.rename(columns=ECB_MATURITY_YEARS)
+            pivot = pivot[sorted(pivot.columns)]  # Sort by maturity
+            pivot.index = pd.to_datetime(pivot.index)
+            pivot.index.name = "Date"
+            results[label] = pivot
+            print(f"  → {label}: {len(pivot)} days of data")
+        except Exception as e:
+            print(f"  ✗ {label}: {e}")
+            results[label] = pd.DataFrame()
+
+    return results
+
+
 # -----------------------------
 # 3. Execution Logic (The 'Clean' Workflow)
 # -----------------------------
@@ -157,12 +223,13 @@ def run_pipeline():
     # B. Macro & Volatility - SAVE RAW DATA
     macro_series = {"CPIAUCNS": "Inflation", "GDP": "Growth", "VIXCLS": "Volatility"}
     macro_data = fetch_data(list(macro_series.keys()), source="fred")
-    # Save raw levels directly so UI can compute YoY correctly
-    macro_data.ffill().dropna().to_csv("macro.csv")
+    macro_clean = macro_data.ffill().dropna()
+    macro_clean.to_csv("macro.csv")
+    # Save VIX separately for the dedicated volatility chart
+    macro_clean[["VIXCLS"]].to_csv("vix.csv")
 
-    # C. Sovereign Yields
-    all_yield_tickers = YIELD_SERIES["US"] + YIELD_SERIES["GER"]
-    yield_data = fetch_data(all_yield_tickers, source="fred")
+    # C. US Treasury Yields (FRED)
+    yield_data = fetch_data(YIELD_SERIES_US, source="fred")
     yield_data.ffill().to_csv("sovereign_yields.csv")
 
     # D. Futures Term Structures
@@ -170,6 +237,13 @@ def run_pipeline():
     term_structure = fetch_futures_term_structure()
     term_structure.to_csv("futures_term_structure.csv", index=False)
     print(f"  → {len(term_structure)} contracts fetched.")
+
+    # E. ECB Yield Curves (Germany ≈ AAA, France ≈ All)
+    print("Fetching ECB yield curves...")
+    ecb_curves = fetch_ecb_yield_curves()
+    for label, df in ecb_curves.items():
+        safe_name = label.split("(")[0].strip().replace(" ", "_").lower()
+        df.to_csv(f"ecb_yields_{safe_name}.csv")
 
     print(f"Pipeline finished. Data updated for {END_DATE}.")
 
