@@ -462,7 +462,7 @@ with tab_overview:
             return f"color: {'#2ecc71' if val > 0 else '#e74c3c'}"
 
         st.dataframe(
-            regime_stats.style.applymap(_color_returns).format("{:+.2f}%"),
+            regime_stats.style.map(_color_returns).format("{:+.2f}%"),
             width=900,
             height=min(600, len(regime_stats) * 36 + 40),
         )
@@ -797,8 +797,8 @@ with tab_fi:
 
     curve_date = st.select_slider(
         "Select date for Yield Curve analysis:",
-        options=curve_data.index.strftime("%Y-%m-%d").tolist(),
-        value=curve_data.index[-1].strftime("%Y-%m-%d"),
+        options=pd.to_datetime(curve_data.index).strftime("%Y-%m-%d").tolist(),
+        value=pd.to_datetime(curve_data.index[-1]).strftime("%Y-%m-%d"),
     )
     ref_date = pd.Timestamp(curve_date)
 

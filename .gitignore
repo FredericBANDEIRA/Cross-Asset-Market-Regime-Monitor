@@ -20,7 +20,7 @@ build/
 .ipynb_checkpoints/
 
 # Generated data files (reproduced by `python data_collection.py`)
-
+#*.csv
 
 # Dependency lock (uv)
 uv.lock
