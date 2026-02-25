@@ -1,0 +1,25 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\frede\Desktop\MSc - FMI\Projects\Cross-Asset-Market-Regime-Monitor\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\frede\Desktop\MSc - FMI\Projects\Cross-Asset-Market-Regime-Monitor
+configfile: pyproject.toml
+collecting ... collected 16 items
+
+tests/test_data_collection.py::test_process_returns_basic PASSED         [  6%]
+tests/test_data_collection.py::test_process_returns_known_values PASSED  [ 12%]
+tests/test_data_collection.py::test_process_returns_handles_missing PASSED [ 18%]
+tests/test_data_collection.py::test_process_macro_regimes_yoy PASSED     [ 25%]
+tests/test_data_collection.py::test_process_macro_regimes_growth PASSED  [ 31%]
+tests/test_data_collection.py::test_month_codes_completeness PASSED      [ 37%]
+tests/test_data_collection.py::test_month_codes_unique PASSED            [ 43%]
+tests/test_regime.py::test_goldilocks PASSED                             [ 50%]
+tests/test_regime.py::test_overheating PASSED                            [ 56%]
+tests/test_regime.py::test_stagflation PASSED                            [ 62%]
+tests/test_regime.py::test_reflation PASSED                              [ 68%]
+tests/test_regime.py::test_deflation PASSED                              [ 75%]
+tests/test_regime.py::test_boundary_goldilocks_growth PASSED             [ 81%]
+tests/test_regime.py::test_boundary_stagflation_inflation PASSED         [ 87%]
+tests/test_regime.py::test_missing_keys_defaults_to_zero PASSED          [ 93%]
+tests/test_regime.py::test_all_regimes_covered PASSED                    [100%]
+
+============================= 16 passed in 1.56s ==============================

@@ -13,15 +13,59 @@ from dateutil.relativedelta import relativedelta
 START_DATE = "2000-01-01"
 END_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
 
-# asset classes from project scope [cite: 16-22]
+# Core asset classes
 ASSETS = {
-    "SPY": "Equities",
+    # Equities — US
+    "SPY": "S&P 500",
+    "QQQ": "Nasdaq 100",
+    "IWM": "Russell 2000",
+    # Equities — International
+    "^FCHI": "CAC 40",
+    "^FTSE": "FTSE 100",
+    "^GDAXI": "DAX",
+    "^N225": "Nikkei 225",
+    "EFA": "MSCI EAFE",
+    "EEM": "MSCI EM",
+    # Bonds
     "TLT": "Nominal Bonds",
-    "TIP": "Inflation-linked Bonds",  # Added missing metric
+    "TIP": "TIPS",
+    # Commodities
     "GC=F": "Gold",
+    "SI=F": "Silver",
     "CL=F": "Crude Oil",
+    "NG=F": "Natural Gas",
+    "HG=F": "Copper",
     "ZW=F": "Wheat",
-    "DX=F": "Dollar",
+    # Dollar
+    "DX=F": "Dollar Index",
+}
+
+# G10 FX pairs (all vs USD, Yahoo Finance format)
+G10_FX = {
+    "EURUSD=X": "EUR",
+    "GBPUSD=X": "GBP",
+    "USDJPY=X": "JPY",
+    "USDCHF=X": "CHF",
+    "AUDUSD=X": "AUD",
+    "NZDUSD=X": "NZD",
+    "USDCAD=X": "CAD",
+    "USDNOK=X": "NOK",
+    "USDSEK=X": "SEK",
+}
+
+# G10 short-term interest rates (FRED) — for carry indicator
+# Policy / interbank rates; best available proxies
+SHORT_RATES = {
+    "DFF": "USD",  # US Federal Funds Rate
+    "IRSTCI01JPM156N": "JPY",  # Japan call rate (monthly)
+    "IR3TIB01GBM156N": "GBP",  # UK 3-month interbank rate
+    "ECBDFR": "EUR",  # ECB deposit facility rate
+    "IR3TIB01CAM156N": "CAD",  # Canada 3-month interbank
+    "IR3TIB01CHM156N": "CHF",  # Switzerland 3-month interbank
+    "IR3TIB01AUM156N": "AUD",  # Australia 3-month interbank
+    "IR3TIB01NZM156N": "NZD",  # New Zealand 3-month interbank
+    "IR3TIB01NOM156N": "NOK",  # Norway 3-month interbank
+    "IR3TIB01SEM156N": "SEK",  # Sweden 3-month interbank
 }
 
 # US Treasury yield curve maturities (FRED)
@@ -244,6 +288,29 @@ def run_pipeline():
     for label, df in ecb_curves.items():
         safe_name = label.split("(")[0].strip().replace(" ", "_").lower()
         df.to_csv(f"ecb_yields_{safe_name}.csv")
+
+    # F. Macro Indicators (Fed Funds, Credit Spread, Breakeven Inflation)
+    print("Fetching macro indicators...")
+    indicator_tickers = ["DFF", "BAA10Y", "DFII10"]
+    indicators = fetch_data(indicator_tickers, source="fred")
+    if not indicators.empty:
+        indicators.ffill().to_csv("macro_indicators.csv")
+        print(f"  → {len(indicators)} rows of macro indicators")
+
+    # G. G10 FX Rates (raw spot prices vs USD)
+    print("Fetching G10 FX rates...")
+    fx_raw = fetch_data(G10_FX, source="yahoo")
+    if not fx_raw.empty:
+        fx_raw.ffill().to_csv("fx_rates.csv")
+        print(f"  → {fx_raw.shape[1]} FX pairs, {len(fx_raw)} days")
+
+    # H. G10 Short-Term Interest Rates (for carry indicator)
+    print("Fetching G10 short-term rates...")
+    short_rates = fetch_data(list(SHORT_RATES.keys()), source="fred")
+    if not short_rates.empty:
+        short_rates = short_rates.rename(columns=SHORT_RATES)
+        short_rates.ffill().to_csv("short_rates.csv")
+        print(f"  → {short_rates.shape[1]} rate series, {len(short_rates)} rows")
 
     print(f"Pipeline finished. Data updated for {END_DATE}.")
 
