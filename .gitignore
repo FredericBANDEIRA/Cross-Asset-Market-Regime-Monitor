@@ -20,7 +20,8 @@ build/
 .ipynb_checkpoints/
 
 # Generated data files (reproduced by `python data_collection.py`)
-#*.csv
+# Kept in Git because Streamlit Cloud deploys from this repo
+# *.csv
 
 # Dependency lock (uv)
 uv.lock

@@ -794,11 +794,12 @@ with tab_fi:
         "Select Curve", list(yield_curves.keys()), horizontal=True
     )
     curve_data = yield_curves[selected_country]
+    curve_data.index = pd.to_datetime(curve_data.index)  # ensure DatetimeIndex
 
     curve_date = st.select_slider(
         "Select date for Yield Curve analysis:",
-        options=pd.to_datetime(curve_data.index).strftime("%Y-%m-%d").tolist(),
-        value=pd.to_datetime(curve_data.index[-1]).strftime("%Y-%m-%d"),
+        options=curve_data.index.strftime("%Y-%m-%d").tolist(),
+        value=curve_data.index[-1].strftime("%Y-%m-%d"),
     )
     ref_date = pd.Timestamp(curve_date)
 
