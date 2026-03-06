@@ -8,8 +8,9 @@ import pandas as pd
 from pathlib import Path
 
 # Resolve the project root and data directory
-PROJECT_ROOT = Path(__file__).resolve().parent
-DATA_DIR = PROJECT_ROOT / "data"
+# Use __file__ location first, fall back to cwd if data/ not found there
+_FILE_DIR = Path(__file__).resolve().parent
+DATA_DIR = _FILE_DIR / "data" if (_FILE_DIR / "data").exists() else Path.cwd() / "data"
 
 # -----------------------------
 # Regime Classification Thresholds (YoY rates)
