@@ -5,6 +5,7 @@ import datetime
 import io
 import requests
 from dateutil.relativedelta import relativedelta
+from core import DATA_DIR
 
 # -----------------------------
 # 1. Configuration (Centralized)
@@ -131,7 +132,7 @@ def fetch_data(tickers, source="yahoo"):
             return df
         else:
             raise ValueError(f"Unknown data source: {source}")
-    except Exception as e:
+    except (ConnectionError, ValueError, KeyError, OSError) as e:
         print(f"  ✗ Failed to fetch {source} data: {e}")
         return pd.DataFrame()
 
@@ -139,7 +140,7 @@ def fetch_data(tickers, source="yahoo"):
 def process_returns(df):
     """Standardized processing: ffill, dropna, and cumulative calc."""
     cleaned = df.ffill().dropna()
-    returns = cleaned.pct_change()
+    returns = cleaned.pct_change().fillna(0)
     cumulative = (1 + returns).cumprod()
     return cumulative
 
@@ -258,28 +259,29 @@ def fetch_ecb_yield_curves():
 
 def run_pipeline():
     print("Starting data refresh...")
+    DATA_DIR.mkdir(exist_ok=True)
 
     # A. Financial Assets
     raw_assets = fetch_data(ASSETS, source="yahoo")
     asset_performance = process_returns(raw_assets)
-    asset_performance.to_csv("all_data.csv", sep=";")
+    asset_performance.to_csv(DATA_DIR / "all_data.csv", sep=";")
 
     # B. Macro & Volatility - SAVE RAW DATA
     macro_series = {"CPIAUCNS": "Inflation", "GDP": "Growth", "VIXCLS": "Volatility"}
     macro_data = fetch_data(list(macro_series.keys()), source="fred")
     macro_clean = macro_data.ffill().dropna()
-    macro_clean.to_csv("macro.csv")
+    macro_clean.to_csv(DATA_DIR / "macro.csv")
     # Save VIX separately for the dedicated volatility chart
-    macro_clean[["VIXCLS"]].to_csv("vix.csv")
+    macro_clean[["VIXCLS"]].to_csv(DATA_DIR / "vix.csv")
 
     # C. US Treasury Yields (FRED)
     yield_data = fetch_data(YIELD_SERIES_US, source="fred")
-    yield_data.ffill().to_csv("sovereign_yields.csv")
+    yield_data.ffill().to_csv(DATA_DIR / "sovereign_yields.csv")
 
     # D. Futures Term Structures
     print("Fetching futures term structures...")
     term_structure = fetch_futures_term_structure()
-    term_structure.to_csv("futures_term_structure.csv", index=False)
+    term_structure.to_csv(DATA_DIR / "futures_term_structure.csv", index=False)
     print(f"  → {len(term_structure)} contracts fetched.")
 
     # E. ECB Yield Curves (Germany ≈ AAA, France ≈ All)
@@ -287,21 +289,21 @@ def run_pipeline():
     ecb_curves = fetch_ecb_yield_curves()
     for label, df in ecb_curves.items():
         safe_name = label.split("(")[0].strip().replace(" ", "_").lower()
-        df.to_csv(f"ecb_yields_{safe_name}.csv")
+        df.to_csv(DATA_DIR / f"ecb_yields_{safe_name}.csv")
 
     # F. Macro Indicators (Fed Funds, Credit Spread, Breakeven Inflation)
     print("Fetching macro indicators...")
     indicator_tickers = ["DFF", "BAA10Y", "DFII10"]
     indicators = fetch_data(indicator_tickers, source="fred")
     if not indicators.empty:
-        indicators.ffill().to_csv("macro_indicators.csv")
+        indicators.ffill().to_csv(DATA_DIR / "macro_indicators.csv")
         print(f"  → {len(indicators)} rows of macro indicators")
 
     # G. G10 FX Rates (raw spot prices vs USD)
     print("Fetching G10 FX rates...")
     fx_raw = fetch_data(G10_FX, source="yahoo")
     if not fx_raw.empty:
-        fx_raw.ffill().to_csv("fx_rates.csv")
+        fx_raw.ffill().to_csv(DATA_DIR / "fx_rates.csv")
         print(f"  → {fx_raw.shape[1]} FX pairs, {len(fx_raw)} days")
 
     # H. G10 Short-Term Interest Rates (for carry indicator)
@@ -309,7 +311,7 @@ def run_pipeline():
     short_rates = fetch_data(list(SHORT_RATES.keys()), source="fred")
     if not short_rates.empty:
         short_rates = short_rates.rename(columns=SHORT_RATES)
-        short_rates.ffill().to_csv("short_rates.csv")
+        short_rates.ffill().to_csv(DATA_DIR / "short_rates.csv")
         print(f"  → {short_rates.shape[1]} rate series, {len(short_rates)} rows")
 
     print(f"Pipeline finished. Data updated for {END_DATE}.")

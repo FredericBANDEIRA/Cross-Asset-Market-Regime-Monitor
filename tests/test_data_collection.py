@@ -13,7 +13,7 @@ import pytest
 def process_returns(df):
     """Standardized processing: ffill, dropna, and cumulative calc."""
     cleaned = df.ffill().dropna()
-    returns = cleaned.pct_change()
+    returns = cleaned.pct_change().fillna(0)
     cumulative = (1 + returns).cumprod()
     return cumulative
 

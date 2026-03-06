@@ -1,38 +1,14 @@
-"""Tests for regime classification logic (from ui_design.py).
+"""Tests for regime classification logic — imported from core.py.
 
-IMPORTANT: The thresholds below MUST stay in sync with ui_design.py.
-If you change thresholds there, update them here too.
+No more copied functions or thresholds. Tests import directly from the
+single source of truth.
 """
 
-# --- Thresholds (must match ui_design.py) ---
-GROWTH_HIGH = 0.04
-GROWTH_LOW = 0.02
-INFLATION_HIGH = 0.03
-INFLATION_LOW = 0.025
-
-
-def classify_regime(row):
-    """
-    Mirror of the classify_regime function from ui_design.py.
-    Copied here to test without launching Streamlit.
-    """
-    g = row.get("GDP", 0)
-    i = row.get("CPIAUCNS", 0)
-
-    if g > GROWTH_HIGH and i < INFLATION_LOW:
-        return "Goldilocks"
-    elif g > GROWTH_HIGH and i >= INFLATION_HIGH:
-        return "Overheating"
-    elif g <= GROWTH_LOW and i >= INFLATION_HIGH:
-        return "Stagflation"
-    elif g <= GROWTH_LOW and i < INFLATION_LOW:
-        return "Deflation"
-    elif g > GROWTH_LOW and i < INFLATION_LOW:
-        return "Reflation"
-    elif g > GROWTH_LOW and i >= INFLATION_LOW:
-        return "Overheating"
-    else:
-        return "Deflation"
+from core import (
+    classify_regime,
+    GROWTH_HIGH,
+    INFLATION_HIGH,
+)
 
 
 # ----- Test each regime -----

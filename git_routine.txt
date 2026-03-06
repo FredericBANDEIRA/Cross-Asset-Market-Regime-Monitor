@@ -1,0 +1,45 @@
+========================================
+  GIT ROUTINE — Cross-Asset Market Regime Monitor
+========================================
+
+--- OPENING THE PROJECT ---
+
+1. Pull latest changes (the daily GitHub Action may have pushed new data):
+
+     git pull --rebase origin main
+
+2. Start working!
+
+
+--- CLOSING THE PROJECT ---
+
+1. Stage your changes:
+
+     git add -A
+
+2. Commit with a descriptive message:
+
+     git commit -m "feat: describe what you changed"
+
+3. Pull any remote changes (in case the daily refresh ran while you worked):
+
+     git pull --rebase origin main
+
+4. Push:
+
+     git push origin main
+
+
+--- IF YOU GET A MERGE CONFLICT ---
+
+1. Open the conflicting files and resolve the markers (<<<, ===, >>>)
+2. Stage resolved files:    git add <file>
+3. Continue the rebase:     git rebase --continue
+4. Push:                    git push origin main
+
+
+--- USEFUL COMMANDS ---
+
+  git status              — see what's changed
+  git log --oneline -5    — see last 5 commits
+  git diff                — see unstaged changes

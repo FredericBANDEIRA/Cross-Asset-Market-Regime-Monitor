@@ -4,7 +4,16 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 from datetime import timedelta
-import os
+
+from core import (
+    GROWTH_HIGH,
+    GROWTH_LOW,
+    INFLATION_HIGH,
+    INFLATION_LOW,
+    REGIME_COLORS,
+    classify_regime,
+    load_and_clean_data as _load_data,
+)
 
 # -----------------------------
 # 1. Configuration & Styling
@@ -15,111 +24,16 @@ st.set_page_config(page_title=TITLE, layout="wide")
 # Plotly dark theme for all charts
 PLOTLY_TEMPLATE = "plotly_dark"
 
-# Regime classification thresholds (YoY rates)
-# Calibrated on actual US data: GDP YoY median ~4.5%, CPI YoY median ~2.3%
-GROWTH_HIGH = 0.04  # GDP YoY above 4% = strong growth
-GROWTH_LOW = 0.02  # GDP YoY below 2% = weak growth
-INFLATION_HIGH = 0.03  # CPI YoY above 3% = high inflation
-INFLATION_LOW = 0.025  # CPI YoY below 2.5% = moderate/low inflation
-
-# Regime color palette
-REGIME_COLORS = {
-    "Goldilocks": "#2ecc71",  # green
-    "Overheating": "#e74c3c",  # red
-    "Stagflation": "#e67e22",  # orange
-    "Reflation": "#3498db",  # blue
-    "Deflation": "#9b59b6",  # purple
-}
-
 st.title(TITLE)
 
 
 # -----------------------------
-# 2. Data Loading (Optimized & Robust)
+# 2. Data Loading (Cached)
 # -----------------------------
 @st.cache_data
 def load_and_clean_data():
-    """Loads all datasets and handles initial cleaning."""
-    # 1. Macro Data: Load RAW levels
-    macro_raw = pd.read_csv("macro.csv", index_col=0, parse_dates=True)
-    macro_raw = macro_raw.apply(pd.to_numeric, errors="coerce").ffill().dropna()
-
-    # Create growth index for visualization [cite: 24, 37]
-    # Use fillna(0) to prevent numeric warnings during index creation
-    macro_idx = (1 + macro_raw.pct_change().fillna(0)).cumprod()
-
-    # 2. Asset Data [cite: 10, 15]
-    assets = (
-        pd.read_csv("all_data.csv", index_col=0, delimiter=";", parse_dates=True)
-        .ffill()
-        .dropna()
-    )
-
-    # 3. Volatility [cite: 13]
-    vola = pd.read_csv("vix.csv", index_col=0, parse_dates=True).ffill().dropna()
-
-    # 4. US Yields [cite: 14]
-    yields_us = (
-        pd.read_csv("sovereign_yields.csv", index_col=0, parse_dates=True)
-        .ffill()
-        .dropna()
-    )
-
-    # 5. ECB Yield Curves (optional — files may not exist yet)
-    ecb_aaa = pd.DataFrame()
-    ecb_all = pd.DataFrame()
-    if os.path.exists("ecb_yields_eurozone_aaa.csv"):
-        ecb_aaa = pd.read_csv(
-            "ecb_yields_eurozone_aaa.csv", index_col=0, parse_dates=True
-        )
-    if os.path.exists("ecb_yields_eurozone_all.csv"):
-        ecb_all = pd.read_csv(
-            "ecb_yields_eurozone_all.csv", index_col=0, parse_dates=True
-        )
-
-    # 6. Futures Term Structure (optional)
-    if os.path.exists("futures_term_structure.csv"):
-        futures_ts = pd.read_csv("futures_term_structure.csv")
-    else:
-        futures_ts = pd.DataFrame()
-
-    # 7. Macro Indicators (optional — Fed Funds, Credit Spread, TIPS yield)
-    if os.path.exists("macro_indicators.csv"):
-        indicators = pd.read_csv(
-            "macro_indicators.csv", index_col=0, parse_dates=True
-        ).ffill()
-    else:
-        indicators = pd.DataFrame()
-
-    # 8. G10 FX Rates (optional)
-    if os.path.exists("fx_rates.csv"):
-        fx_rates = (
-            pd.read_csv("fx_rates.csv", index_col=0, parse_dates=True).ffill().dropna()
-        )
-    else:
-        fx_rates = pd.DataFrame()
-
-    # 9. G10 Short-Term Interest Rates (optional — for carry indicator)
-    if os.path.exists("short_rates.csv"):
-        short_rates = pd.read_csv(
-            "short_rates.csv", index_col=0, parse_dates=True
-        ).ffill()
-    else:
-        short_rates = pd.DataFrame()
-
-    return (
-        macro_raw,
-        macro_idx,
-        assets,
-        vola,
-        yields_us,
-        ecb_aaa,
-        ecb_all,
-        futures_ts,
-        indicators,
-        fx_rates,
-        short_rates,
-    )
+    """Thin Streamlit wrapper — caching around core.load_and_clean_data()."""
+    return _load_data()
 
 
 # Unpack carefully - ensure order matches return statement
@@ -136,38 +50,6 @@ def load_and_clean_data():
     fx_rates,
     short_rates,
 ) = load_and_clean_data()
-
-
-# -----------------------------
-# 3. Regime Classification Logic
-# -----------------------------
-def classify_regime(row):
-    """Determines regime based on YoY thresholds.
-
-    Quadrant model:
-      - Goldilocks:  high growth + low inflation
-      - Overheating: high growth + high inflation
-      - Stagflation: low growth  + high inflation
-      - Reflation:   moderate growth + low inflation
-      - Deflation:   low growth  + low inflation
-    """
-    g = row.get("GDP", 0)
-    i = row.get("CPIAUCNS", 0)
-
-    if g > GROWTH_HIGH and i < INFLATION_LOW:
-        return "Goldilocks"
-    elif g > GROWTH_HIGH and i >= INFLATION_HIGH:
-        return "Overheating"
-    elif g <= GROWTH_LOW and i >= INFLATION_HIGH:
-        return "Stagflation"
-    elif g <= GROWTH_LOW and i < INFLATION_LOW:
-        return "Deflation"
-    elif g > GROWTH_LOW and i < INFLATION_LOW:
-        return "Reflation"
-    elif g > GROWTH_LOW and i >= INFLATION_LOW:
-        return "Overheating"
-    else:
-        return "Deflation"
 
 
 # Calculate YoY on MONTHLY-resampled data (GDP is quarterly, CPI monthly)
@@ -268,7 +150,7 @@ else:
 current_regime = macro_yoy["Regime"].iloc[-1] if not macro_yoy.empty else "Unknown"
 regime_color = REGIME_COLORS.get(current_regime, "#95a5a6")
 
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
 
 with kpi1:
     st.markdown(
@@ -280,26 +162,60 @@ with kpi1:
 
 with kpi2:
     vix_latest = float(vola.iloc[-1, 0]) if not vola.empty else 0
-    vix_color = (
-        "#e74c3c" if vix_latest > 25 else "#2ecc71" if vix_latest < 15 else "#f39c12"
+    vix_prev = float(vola.iloc[-2, 0]) if len(vola) > 1 else vix_latest
+    vix_delta = vix_latest - vix_prev
+    vix_label = (
+        "🔴 High" if vix_latest > 25 else "🟢 Low" if vix_latest < 15 else "🟡 Moderate"
     )
-    st.metric(label="VIX (Latest)", value=f"{vix_latest:.1f}", delta=None)
+    st.metric(
+        label=f"VIX ({vix_label})",
+        value=f"{vix_latest:.1f}",
+        delta=f"{vix_delta:+.1f}",
+        delta_color="inverse",  # VIX rising = bad → show red
+    )
 
 with kpi3:
     if not yields_us.empty and "DGS10" in yields_us.columns:
-        us10y = float(yields_us["DGS10"].iloc[-1])
-        st.metric(label="US 10Y Yield", value=f"{us10y:.2f}%")
+        us10y = float(yields_us["DGS10"].dropna().iloc[-1])
+        us10y_prev = (
+            float(yields_us["DGS10"].dropna().iloc[-2])
+            if len(yields_us["DGS10"].dropna()) > 1
+            else us10y
+        )
+        us10y_delta = us10y - us10y_prev
+        st.metric(
+            label="US 10Y Yield",
+            value=f"{us10y:.2f}%",
+            delta=f"{us10y_delta:+.2f}%",
+        )
     else:
         st.metric(label="US 10Y Yield", value="N/A")
 
 with kpi4:
-    if not cum_returns.empty:
+    if not cum_returns.empty and "S&P 500" in cum_returns.columns:
         spy_return = (
-            (cum_returns.iloc[-1, 0] / cum_returns.iloc[-30, 0] - 1) * 100
+            (cum_returns["S&P 500"].iloc[-1] / cum_returns["S&P 500"].iloc[-30] - 1)
+            * 100
             if len(cum_returns) > 30
             else 0
         )
-        st.metric(label="30d Equities", value=f"{spy_return:+.1f}%")
+        spy_daily = (
+            (cum_returns["S&P 500"].iloc[-1] / cum_returns["S&P 500"].iloc[-2] - 1)
+            * 100
+            if len(cum_returns) > 1
+            else 0
+        )
+        st.metric(
+            label="30d S&P 500",
+            value=f"{spy_return:+.1f}%",
+            delta=f"{spy_daily:+.2f}% today",
+        )
+
+with kpi5:
+    data_date = (
+        cum_returns.index[-1].strftime("%Y-%m-%d") if not cum_returns.empty else "N/A"
+    )
+    st.metric(label="📅 Data as of", value=data_date)
 
 if selected_regime != "All":
     st.info(f"Showing performance during historical **{selected_regime}** periods.")
@@ -341,17 +257,20 @@ with tab_overview:
         else macro_yoy["Regime"]
     )
     if not regime_ts.empty:
+        # Downsample to monthly for performance (~240 bars vs ~7000 daily)
+        regime_monthly = regime_ts.resample("ME").last().dropna()
+
         fig_regime = go.Figure()
         for regime, color in REGIME_COLORS.items():
-            mask = regime_ts == regime
+            mask = regime_monthly == regime
             if mask.any():
                 fig_regime.add_trace(
                     go.Bar(
-                        x=regime_ts.index[mask],
+                        x=regime_monthly.index[mask],
                         y=[1] * mask.sum(),
                         marker_color=color,
                         name=regime,
-                        width=86400000 * 2,
+                        width=86400000 * 31,  # ~1 month in ms
                     )
                 )
         fig_regime.update_layout(
@@ -359,7 +278,7 @@ with tab_overview:
             template=PLOTLY_TEMPLATE,
             yaxis=dict(visible=False),
             xaxis_title="",
-            height=180,
+            height=220,
             margin=dict(l=0, r=0, t=0, b=30),
             legend=dict(orientation="h", y=1.15),
             bargap=0,
@@ -369,6 +288,9 @@ with tab_overview:
     # Cross-Asset Correlation Matrix
     corr_cols = [c for c in CORR_ASSETS if c in cum_returns.columns]
     st.subheader("Cross-Asset Correlation Matrix")
+    st.caption(
+        f"Based on daily returns from {start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}."
+    )
     if corr_cols:
         returns_for_corr = (
             cum_returns.loc[start_dt:end_dt, corr_cols].pct_change().dropna()
@@ -421,6 +343,10 @@ with tab_overview:
         )
         fig_perf.add_vline(x=0, line_dash="dash", line_color="white", opacity=0.3)
         st.plotly_chart(fig_perf, width="stretch")
+        st.caption(
+            "⚠️ Over long periods (e.g. Max), compounding amplifies differences. "
+            "Use the sidebar Time Range filter (e.g. 1Y, 3Y) for more comparable performance."
+        )
     else:
         st.warning("No data available for the selected regime.")
 
@@ -481,20 +407,47 @@ with tab_macro:
             columns=["VIXCLS"], errors="ignore"
         )
         if not macro_display.empty:
-            macro_display = macro_display / macro_display.iloc[0]
+            macro_display = macro_display / macro_display.iloc[0] * 100  # rebase to 100
         macro_display = macro_display.rename(
             columns={"CPIAUCNS": "Inflation (CPI)", "GDP": "Growth (GDP)"}
         )
-        gdp = macro_display["Growth (GDP)"].copy()
-        gdp[gdp.diff().eq(0)] = np.nan
-        macro_display["Growth (GDP)"] = gdp.interpolate(method="linear")
-        fig_macro = px.line(
-            macro_display,
-            labels={"value": "Growth Index", "variable": ""},
-            template=PLOTLY_TEMPLATE,
+        # Dual y-axes so GDP (quarterly) isn't dwarfed by CPI (monthly)
+        fig_macro = go.Figure()
+        fig_macro.add_trace(
+            go.Scatter(
+                x=macro_display.index,
+                y=macro_display["Inflation (CPI)"],
+                name="Inflation (CPI)",
+                line=dict(color="#e67e22", width=2),
+                yaxis="y",
+            )
         )
-        fig_macro.update_layout(xaxis_title="", legend=dict(orientation="h", y=-0.15))
+        fig_macro.add_trace(
+            go.Scatter(
+                x=macro_display.index,
+                y=macro_display["Growth (GDP)"],
+                name="Growth (GDP)",
+                line=dict(color="#3498db", width=2),
+                yaxis="y2",
+            )
+        )
+        fig_macro.update_layout(
+            template=PLOTLY_TEMPLATE,
+            xaxis_title="",
+            yaxis=dict(
+                title=dict(text="CPI Index", font=dict(color="#e67e22")), side="left"
+            ),
+            yaxis2=dict(
+                title=dict(text="GDP Index", font=dict(color="#3498db")),
+                side="right",
+                overlaying="y",
+            ),
+            legend=dict(orientation="h", y=-0.15),
+        )
         st.plotly_chart(fig_macro, width="stretch")
+        st.caption(
+            "Both series rebased to 100 at period start. GDP updates quarterly (stepped), CPI monthly."
+        )
 
     with col2:
         st.subheader("Volatility (VIX)")
@@ -516,83 +469,80 @@ with tab_macro:
         )
         st.plotly_chart(fig_vix, width="stretch")
 
-    # Breakeven Inflation + Credit Spread
+    # Breakeven Inflation (full width)
     if not indicators.empty:
-        ind_col1, ind_col2 = st.columns(2)
-
-        with ind_col1:
-            if "DFII10" in indicators.columns and "DGS10" in yields_us.columns:
-                st.subheader("Breakeven Inflation (10Y)")
-                combined = pd.DataFrame(
-                    {
-                        "Nominal 10Y": yields_us["DGS10"],
-                        "Real 10Y (TIPS)": indicators["DFII10"],
-                    }
-                ).dropna()
-                combined["Breakeven"] = (
-                    combined["Nominal 10Y"] - combined["Real 10Y (TIPS)"]
+        if "DFII10" in indicators.columns and "DGS10" in yields_us.columns:
+            st.subheader("Breakeven Inflation (10Y)")
+            combined = pd.DataFrame(
+                {
+                    "Nominal 10Y": yields_us["DGS10"],
+                    "Real 10Y (TIPS)": indicators["DFII10"],
+                }
+            ).dropna()
+            combined["Breakeven"] = (
+                combined["Nominal 10Y"] - combined["Real 10Y (TIPS)"]
+            )
+            be = combined.loc[start_dt:end_dt, "Breakeven"]
+            if not be.empty:
+                fig_be = go.Figure()
+                fig_be.add_trace(
+                    go.Scatter(
+                        x=be.index,
+                        y=be.values,
+                        mode="lines",
+                        name="Breakeven Inflation",
+                        line=dict(color="#e67e22", width=1.5),
+                        fill="tozeroy",
+                        fillcolor="rgba(230,126,34,0.1)",
+                    )
                 )
-                be = combined.loc[start_dt:end_dt, "Breakeven"]
-                if not be.empty:
-                    fig_be = go.Figure()
-                    fig_be.add_trace(
-                        go.Scatter(
-                            x=be.index,
-                            y=be.values,
-                            mode="lines",
-                            name="Breakeven Inflation",
-                            line=dict(color="#e67e22", width=1.5),
-                            fill="tozeroy",
-                            fillcolor="rgba(230,126,34,0.1)",
-                        )
-                    )
-                    fig_be.add_hline(
-                        y=2.0,
-                        line_dash="dash",
-                        line_color="white",
-                        opacity=0.5,
-                        annotation_text="2% Target",
-                    )
-                    fig_be.update_layout(
-                        template=PLOTLY_TEMPLATE,
-                        height=280,
-                        xaxis_title="",
-                        yaxis_title="Rate (%)",
-                        showlegend=False,
-                    )
-                    st.plotly_chart(fig_be, width="stretch")
+                fig_be.add_hline(
+                    y=2.0,
+                    line_dash="dash",
+                    line_color="white",
+                    opacity=0.5,
+                    annotation_text="2% Target",
+                )
+                fig_be.update_layout(
+                    template=PLOTLY_TEMPLATE,
+                    height=300,
+                    xaxis_title="",
+                    yaxis_title="Rate (%)",
+                    showlegend=False,
+                )
+                st.plotly_chart(fig_be, width="stretch")
 
-        with ind_col2:
-            if "BAA10Y" in indicators.columns:
-                st.subheader("Credit Spread (Baa – 10Y)")
-                cs = indicators.loc[start_dt:end_dt, "BAA10Y"].dropna()
-                if not cs.empty:
-                    fig_cs = go.Figure()
-                    fig_cs.add_trace(
-                        go.Scatter(
-                            x=cs.index,
-                            y=cs.values,
-                            mode="lines",
-                            name="Baa – 10Y",
-                            line=dict(color="#9b59b6", width=1.5),
-                        )
+        # Credit Spread (full width)
+        if "BAA10Y" in indicators.columns:
+            st.subheader("Credit Spread (Baa – 10Y)")
+            cs = indicators.loc[start_dt:end_dt, "BAA10Y"].dropna()
+            if not cs.empty:
+                fig_cs = go.Figure()
+                fig_cs.add_trace(
+                    go.Scatter(
+                        x=cs.index,
+                        y=cs.values,
+                        mode="lines",
+                        name="Baa – 10Y",
+                        line=dict(color="#9b59b6", width=1.5),
                     )
-                    fig_cs.add_hrect(
-                        y0=3.0,
-                        y1=cs.max() + 0.5,
-                        fillcolor="red",
-                        opacity=0.08,
-                        annotation_text="Stress",
-                        annotation_position="top left",
-                    )
-                    fig_cs.update_layout(
-                        template=PLOTLY_TEMPLATE,
-                        height=280,
-                        xaxis_title="",
-                        yaxis_title="Spread (%)",
-                        showlegend=False,
-                    )
-                    st.plotly_chart(fig_cs, width="stretch")
+                )
+                fig_cs.add_hrect(
+                    y0=3.0,
+                    y1=cs.max() + 0.5,
+                    fillcolor="red",
+                    opacity=0.08,
+                    annotation_text="Stress",
+                    annotation_position="top left",
+                )
+                fig_cs.update_layout(
+                    template=PLOTLY_TEMPLATE,
+                    height=300,
+                    xaxis_title="",
+                    yaxis_title="Spread (%)",
+                    showlegend=False,
+                )
+                st.plotly_chart(fig_cs, width="stretch")
 
         # Fed Funds Rate (full width)
         if "DFF" in indicators.columns:
@@ -876,7 +826,25 @@ with tab_fi:
                 height=250,
                 legend=dict(orientation="h", y=-0.2),
             )
+            # Add NBER recession bars for context
+            RECESSIONS = [
+                ("2001-03-01", "2001-11-01"),  # Dot-com
+                ("2007-12-01", "2009-06-01"),  # Great Financial Crisis
+                ("2020-02-01", "2020-04-01"),  # COVID-19
+            ]
+            for rec_start, rec_end in RECESSIONS:
+                fig_spread.add_vrect(
+                    x0=rec_start,
+                    x1=rec_end,
+                    fillcolor="gray",
+                    opacity=0.15,
+                    line_width=0,
+                )
             st.plotly_chart(fig_spread, width="stretch")
+            st.caption(
+                "Gray shaded areas indicate NBER recession periods. "
+                "Yield curve inversion (red) has historically preceded recessions."
+            )
 
     # --- Term Premium Estimate ---
     st.divider()
@@ -916,7 +884,7 @@ with tab_fi:
                 "Positive = yields have risen (term premium widened)."
             )
 
-    # --- Real Yield Curve (TIPS vs Nominal) ---
+    # --- Real Yield Curve (TIPS vs Nominal) — promoted as key indicator ---
     st.divider()
     st.subheader("Real vs Nominal Yield (10Y)")
     if (
@@ -1018,6 +986,8 @@ with tab_eq:
         ].copy()
         commodity_data["expiry_date"] = pd.to_datetime(commodity_data["expiry_date"])
         commodity_data = commodity_data.sort_values("expiry_date")
+        # Filter out stale/zero-price contracts
+        commodity_data = commodity_data[commodity_data["price"] > 0]
 
         fig_term = px.line(
             commodity_data,
@@ -1044,12 +1014,19 @@ with tab_eq:
     # --- Rolling Sharpe Ratio ---
     st.divider()
     st.subheader("Rolling Sharpe Ratio (1-Year Window)")
-    sharpe_assets = [
+    all_sharpe_assets = [
         a
         for a in ["S&P 500", "Nasdaq 100", "Gold", "Nominal Bonds", "Dollar Index"]
         if a in cum_returns.columns
     ]
-    if sharpe_assets:
+    if all_sharpe_assets:
+        sharpe_selection = st.multiselect(
+            "Select assets for Sharpe comparison",
+            options=all_sharpe_assets,
+            default=all_sharpe_assets[:3],
+            key="sharpe_select",
+        )
+        sharpe_assets = sharpe_selection if sharpe_selection else all_sharpe_assets
         daily_ret_sharpe = cum_returns[sharpe_assets].pct_change().dropna()
         window = 252  # 1 year trading days
         if len(daily_ret_sharpe) > window:
@@ -1099,10 +1076,25 @@ with tab_eq:
 # ═══════════════════════════════════════════════════════
 with tab_fx:
     if not fx_rates.empty:
-        # --- FX Performance Chart ---
+        # --- FX Performance Chart + Period Returns Table ---
         st.subheader("G10 FX Performance (Rebased to 1.0)")
         fx_period = fx_rates.loc[start_dt:end_dt]
         if not fx_period.empty and len(fx_period) > 1:
+            # Period returns summary table
+            fx_pct = ((fx_period.iloc[-1] / fx_period.iloc[0]) - 1) * 100
+            fx_pct = fx_pct.sort_values(ascending=False)
+            fx_summary = pd.DataFrame(
+                {
+                    "Currency": fx_pct.index,
+                    "Period Return (%)": [f"{v:+.2f}%" for v in fx_pct.values],
+                }
+            ).reset_index(drop=True)
+            st.dataframe(
+                fx_summary,
+                width="stretch",
+                height=min(350, len(fx_summary) * 35 + 40),
+            )
+
             fx_rebased = fx_period / fx_period.iloc[0]
             fig_fx_perf = px.line(
                 fx_rebased,
@@ -1136,8 +1128,17 @@ with tab_fx:
         )  # annualized %
         fx_vol_period = fx_vol.loc[start_dt:end_dt]
         if not fx_vol_period.empty:
+            vol_currencies = st.multiselect(
+                "Select currencies for volatility comparison",
+                options=fx_vol_period.columns.tolist(),
+                default=fx_vol_period.columns[:4].tolist(),
+                key="fx_vol_select",
+            )
+            vol_display = (
+                fx_vol_period[vol_currencies] if vol_currencies else fx_vol_period
+            )
             fig_fx_vol = px.line(
-                fx_vol_period,
+                vol_display,
                 labels={"value": "Annualized Vol (%)", "variable": "Currency"},
                 template=PLOTLY_TEMPLATE,
             )
@@ -1296,8 +1297,16 @@ with tab_fx:
                 cross_matrix.loc[base, quote] = usd_per_unit[base] / usd_per_unit[quote]
 
         cross_matrix = cross_matrix.astype(float).round(4)
+
+        def _color_cross_rates(val):
+            if pd.isna(val):
+                return ""
+            if abs(val - 1.0) < 0.001:  # diagonal (identity)
+                return "font-weight: bold; background-color: rgba(255,255,255,0.1)"
+            return ""
+
         st.dataframe(
-            cross_matrix.style.format("{:.4f}"),
+            cross_matrix.style.map(_color_cross_rates).format("{:.4f}"),
             width="stretch",
             height=400,
         )
