@@ -142,20 +142,21 @@ with st.sidebar:
     st.header("Data Status")
     latest_data_date = cum_returns.index[-1] if not cum_returns.empty else None
     if latest_data_date:
-        staleness = (pd.Timestamp.now() - latest_data_date).days
-        if staleness <= 1:
+        # Use business days to avoid false "stale" warnings on weekends
+        bdays = len(pd.bdate_range(latest_data_date, pd.Timestamp.now())) - 1
+        if bdays <= 1:
             st.success(f"✅ Data is current ({latest_data_date.strftime('%Y-%m-%d')})")
-        elif staleness <= 3:
+        elif bdays <= 2:
             st.warning(
-                f"⚠️ Data is {staleness} days old ({latest_data_date.strftime('%Y-%m-%d')})"
+                f"⚠️ Data is {bdays} business days old ({latest_data_date.strftime('%Y-%m-%d')})"
             )
         else:
             st.error(
-                f"🔴 Data is {staleness} days stale ({latest_data_date.strftime('%Y-%m-%d')})"
+                f"🔴 Data is {bdays} business days stale ({latest_data_date.strftime('%Y-%m-%d')})"
             )
     else:
         st.error("No data loaded.")
-        staleness = 999  # Force refresh
+        bdays = 999  # Force refresh
 
     # --- Refresh Button ---
     if st.button("🔄 Refresh Data Now"):
