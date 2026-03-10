@@ -6,25 +6,27 @@ A Streamlit dashboard that classifies the macroeconomic environment into **five 
 
 ### Dashboard Tabs
 
-| Tab                           | Contents                                                                                      |
-| ----------------------------- | --------------------------------------------------------------------------------------------- |
-| 📊 **Overview**               | Regime timeline, cross-asset correlation matrix, performance heatmap                          |
-| 📈 **Macro & Rates**          | GDP/CPI trends, VIX, breakeven inflation, credit spread, Fed Funds rate, regime decomposition |
-| 🏦 **Fixed Income**           | Sovereign yield curves (US/Eurozone), 10Y–2Y inversion indicator                              |
-| 💹 **Equities & Commodities** | Cumulative returns (rebased), futures term structures                                         |
-| 💱 **FX**                     | G10 cross-rates matrix                                                                        |
+| Tab                           | Contents                                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 📊 **Overview**               | Regime timeline, cross-asset correlation matrix, performance heatmap, regime summary stats                                 |
+| 📈 **Macro & Rates**          | GDP/CPI trends (dual-axis), VIX, breakeven inflation, credit spread, Fed Funds, regime decomposition                       |
+| 🏦 **Fixed Income**           | Sovereign yield curves (US/Eurozone), 10Y–2Y spread with NBER recession bars, term premium, real vs nominal yields         |
+| 💹 **Equities & Commodities** | Cumulative returns (rebased), futures term structures, rolling Sharpe ratio                                                |
+| 💱 **FX**                     | G10 FX performance with period returns table, volatility (selectable), carry indicator, DXY components, cross-rates matrix |
 
 ### Key Capabilities
 
 - **Regime Classification** — GDP × CPI YoY thresholds computed on monthly-resampled data, with color-coded timeline
 - **Regime Decomposition** — GDP YoY vs CPI YoY chart with threshold reference lines for full transparency
-- **KPI Dashboard** — Current regime badge, VIX, US 10Y yield, 30-day equity return (always visible above tabs)
+- **KPI Dashboard** — Current regime badge, VIX (color-coded), US 10Y yield, 30d S&P 500, data timestamp (always visible above tabs)
 - **22 Assets** — US & international equities, bonds, commodities, FX, dollar index
 - **Sovereign Yield Curves** — US Treasury (FRED), Eurozone AAA ≈ Germany, Eurozone All ≈ France (ECB API)
-- **10Y–2Y Spread** — Classic inversion indicator with shaded inversion periods
-- **Futures Term Structure** — Contango/backwardation for 5 commodity/index futures
+- **10Y–2Y Spread** — Classic inversion indicator with NBER recession shading
+- **Futures Term Structure** — Contango/backwardation for 5 commodity/index futures (stale contracts filtered)
 - **G10 FX Cross Rates** — 10×10 matrix computed from USD pairs
 - **Macro Indicators** — Breakeven inflation, credit spread (Baa–10Y), Federal Funds rate
+- **Data Freshness** — Sidebar indicator warns when data is stale
+- **Export** — Download filtered returns as CSV
 - **Sidebar Filters** — Time range presets (1W–Max), custom date range, asset selection, regime filter
 
 ## Data Sources
@@ -39,7 +41,7 @@ A Streamlit dashboard that classifies the macroeconomic environment into **five 
 
 ```bash
 # Clone and install
-git clone https://github.com/<your-username>/Cross-Asset-Market-Regime-Monitor.git
+git clone https://github.com/FredericBANDEIRA/Cross-Asset-Market-Regime-Monitor.git
 cd Cross-Asset-Market-Regime-Monitor
 uv sync
 
@@ -53,10 +55,12 @@ uv run streamlit run ui_design.py
 ## Project Structure
 
 ```
-├── data_collection.py    # Data pipeline (Yahoo, FRED, ECB)
-├── ui_design.py          # Streamlit dashboard (tabbed layout)
-├── pyproject.toml        # Dependencies
-├── tests/                # Unit tests
+├── core.py               # Business logic (regime thresholds, classification, data loading)
+├── data_collection.py    # Data pipeline (Yahoo, FRED, ECB) → writes to data/
+├── ui_design.py          # Streamlit dashboard (tabbed layout, charts)
+├── data/                 # Generated CSV data files
+├── tests/                # Unit tests (import from core.py)
+├── pyproject.toml        # Dependencies & project config
 └── .github/workflows/    # Daily data refresh (GitHub Actions)
 ```
 

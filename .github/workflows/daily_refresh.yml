@@ -21,10 +21,10 @@ jobs:
               with:
                   python-version: "3.12"
 
-            - name: Install dependencies
+            - name: Install project dependencies
               run: |
                   pip install --upgrade pip
-                  pip install pandas yfinance pandas-datareader matplotlib python-dateutil requests setuptools
+                  pip install .
 
             - name: Run data collection pipeline
               run: python data_collection.py

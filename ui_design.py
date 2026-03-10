@@ -137,6 +137,62 @@ with st.sidebar:
         options=["All"] + sorted(list(macro_yoy["Regime"].unique())),
     )
 
+    # --- Data Freshness Indicator ---
+    st.divider()
+    st.header("Data Status")
+    latest_data_date = cum_returns.index[-1] if not cum_returns.empty else None
+    if latest_data_date:
+        staleness = (pd.Timestamp.now() - latest_data_date).days
+        if staleness <= 1:
+            st.success(f"✅ Data is current ({latest_data_date.strftime('%Y-%m-%d')})")
+        elif staleness <= 3:
+            st.warning(
+                f"⚠️ Data is {staleness} days old ({latest_data_date.strftime('%Y-%m-%d')})"
+            )
+        else:
+            st.error(
+                f"🔴 Data is {staleness} days stale ({latest_data_date.strftime('%Y-%m-%d')})"
+            )
+    else:
+        st.error("No data loaded.")
+        staleness = 999  # Force refresh
+
+    # --- Refresh Button ---
+    if st.button("🔄 Refresh Data Now"):
+        import subprocess
+        import sys
+
+        with st.spinner("Fetching latest market data..."):
+            result = subprocess.run(
+                [sys.executable, "data_collection.py"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        if result.returncode == 0:
+            st.success("Data refreshed!")
+            st.cache_data.clear()
+            st.rerun()
+        else:
+            st.error(f"Refresh failed: {result.stderr[-200:]}")
+
+    # --- Export Button ---
+    st.divider()
+    st.header("Export")
+    if not cum_returns.empty:
+        export_data = cum_returns.loc[start_dt:end_dt]
+        csv_export = export_data.to_csv()
+        st.download_button(
+            label="📥 Download Returns (CSV)",
+            data=csv_export,
+            file_name=f"returns_{start_dt.strftime('%Y%m%d')}_{end_dt.strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+        )
+
+    # --- Footer ---
+    st.divider()
+    st.caption("v1.0 · Cross-Asset Market Regime Monitor")
+
 # Final Filtering Logic for Performance Section
 if selected_regime != "All":
     regime_dates = macro_yoy[macro_yoy["Regime"] == selected_regime].index
