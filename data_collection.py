@@ -38,7 +38,7 @@ ASSETS = {
     "HG=F": "Copper",
     "ZW=F": "Wheat",
     # Dollar
-    "DX=F": "Dollar Index",
+    "DX-Y.NYB": "Dollar Index",
 }
 
 # G10 FX pairs (all vs USD, Yahoo Finance format)
@@ -123,9 +123,17 @@ def fetch_data(tickers, source="yahoo"):
     """Unified downloader for better error handling."""
     try:
         if source == "yahoo":
-            df = yf.download(
+            raw = yf.download(
                 list(tickers.keys()), start=START_DATE, end=END_DATE, progress=False
-            )["Close"]
+            )
+            # yfinance returns MultiIndex columns for multi-ticker downloads
+            if isinstance(raw.columns, pd.MultiIndex):
+                df = raw["Close"]
+            elif "Close" in raw.columns:
+                df = raw[["Close"]]
+                df.columns = list(tickers.keys())
+            else:
+                df = raw
             return df.rename(columns=tickers)
         elif source == "fred":
             df = dr.DataReader(tickers, "fred", START_DATE)
@@ -133,13 +141,17 @@ def fetch_data(tickers, source="yahoo"):
         else:
             raise ValueError(f"Unknown data source: {source}")
     except (ConnectionError, ValueError, KeyError, OSError) as e:
-        print(f"  ✗ Failed to fetch {source} data: {e}")
+        print(f"  [X] Failed to fetch {source} data: {e}")
         return pd.DataFrame()
 
 
 def process_returns(df):
     """Standardized processing: ffill, dropna, and cumulative calc."""
-    cleaned = df.ffill().dropna()
+    cleaned = df.ffill()
+    # Drop columns that are entirely NaN (e.g. delisted tickers)
+    cleaned = cleaned.dropna(axis=1, how="all")
+    # Drop rows where any remaining column is NaN (initial rows)
+    cleaned = cleaned.dropna()
     returns = cleaned.pct_change().fillna(0)
     cumulative = (1 + returns).cumprod()
     return cumulative
@@ -195,7 +207,7 @@ def fetch_futures_term_structure(n_months=8):
                 data = yf.download(ticker, period="5d", progress=False)
                 if data.empty:
                     continue
-                last_price = float(data["Close"].iloc[-1])
+                last_price = float(data["Close"].iloc[-1].iloc[0]) if isinstance(data["Close"].iloc[-1], pd.Series) else float(data["Close"].iloc[-1])
                 expiry_label = target.strftime("%b %Y")  # e.g. "Jun 2025"
                 rows.append(
                     {
@@ -226,8 +238,8 @@ def fetch_ecb_yield_curves():
     results = {}
 
     for label, instrument in [
-        ("Eurozone AAA (≈ Germany)", "G_N_A"),
-        ("Eurozone All (≈ France)", "G_N_C"),
+        ("Eurozone AAA (~Germany)", "G_N_A"),
+        ("Eurozone All (~France)", "G_N_C"),
     ]:
         url = f"{base}/B.U2.EUR.4F.{instrument}.SV_C_YM.{mats}?startPeriod={START_DATE}&format=csvdata"
         try:
@@ -244,9 +256,9 @@ def fetch_ecb_yield_curves():
             pivot.index = pd.to_datetime(pivot.index)
             pivot.index.name = "Date"
             results[label] = pivot
-            print(f"  → {label}: {len(pivot)} days of data")
+            print(f"  -> {label}: {len(pivot)} days of data")
         except Exception as e:
-            print(f"  ✗ {label}: {e}")
+            print(f"  [X] {label}: {e}")
             results[label] = pd.DataFrame()
 
     return results
@@ -282,9 +294,9 @@ def run_pipeline():
     print("Fetching futures term structures...")
     term_structure = fetch_futures_term_structure()
     term_structure.to_csv(DATA_DIR / "futures_term_structure.csv", index=False)
-    print(f"  → {len(term_structure)} contracts fetched.")
+    print(f"  -> {len(term_structure)} contracts fetched.")
 
-    # E. ECB Yield Curves (Germany ≈ AAA, France ≈ All)
+    # E. ECB Yield Curves (Germany ~ AAA, France ~ All)
     print("Fetching ECB yield curves...")
     ecb_curves = fetch_ecb_yield_curves()
     for label, df in ecb_curves.items():
@@ -297,14 +309,14 @@ def run_pipeline():
     indicators = fetch_data(indicator_tickers, source="fred")
     if not indicators.empty:
         indicators.ffill().to_csv(DATA_DIR / "macro_indicators.csv")
-        print(f"  → {len(indicators)} rows of macro indicators")
+        print(f"  -> {len(indicators)} rows of macro indicators")
 
     # G. G10 FX Rates (raw spot prices vs USD)
     print("Fetching G10 FX rates...")
     fx_raw = fetch_data(G10_FX, source="yahoo")
     if not fx_raw.empty:
         fx_raw.ffill().to_csv(DATA_DIR / "fx_rates.csv")
-        print(f"  → {fx_raw.shape[1]} FX pairs, {len(fx_raw)} days")
+        print(f"  -> {fx_raw.shape[1]} FX pairs, {len(fx_raw)} days")
 
     # H. G10 Short-Term Interest Rates (for carry indicator)
     print("Fetching G10 short-term rates...")
@@ -312,7 +324,7 @@ def run_pipeline():
     if not short_rates.empty:
         short_rates = short_rates.rename(columns=SHORT_RATES)
         short_rates.ffill().to_csv(DATA_DIR / "short_rates.csv")
-        print(f"  → {short_rates.shape[1]} rate series, {len(short_rates)} rows")
+        print(f"  -> {short_rates.shape[1]} rate series, {len(short_rates)} rows")
 
     print(f"Pipeline finished. Data updated for {END_DATE}.")
 

@@ -51,6 +51,13 @@ def load_and_clean_data():
     short_rates,
 ) = load_and_clean_data()
 
+# Guard: stop early if asset data is missing
+if cum_returns.empty:
+    st.error(
+        "⚠️ **No asset data loaded.** `data/all_data.csv` is empty.\n\n"
+        "Run `uv run python data_collection.py` to fetch data, then reload."
+    )
+    st.stop()
 
 # Calculate YoY on MONTHLY-resampled data (GDP is quarterly, CPI monthly)
 # pct_change(12) on daily data with ffill produces mostly zeros
@@ -89,7 +96,7 @@ with st.sidebar:
             "Max",
             "Custom",
         ],
-        index=9,  # Default to "Max"
+        index=5,  # Default to "Max"
     )
 
     # Calculate start date from preset
