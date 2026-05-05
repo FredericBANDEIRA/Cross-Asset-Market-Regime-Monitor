@@ -43,3 +43,5 @@
   git status              — see what's changed
   git log --oneline -5    — see last 5 commits
   git diff                — see unstaged changes
+  uv run python -m dashboard.data_collection  — update data locally
+

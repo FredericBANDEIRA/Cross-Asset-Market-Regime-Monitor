@@ -24,7 +24,6 @@ build/
 # *.csv
 
 # Dependency lock (uv)
-uv.lock
 
 # OS
 .DS_Store

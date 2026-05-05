@@ -4,7 +4,19 @@ import datetime
 import io
 import requests
 from dateutil.relativedelta import relativedelta
-from core import DATA_DIR
+from dashboard.config import (
+    DATA_DIR,
+    START_DATE,
+    END_DATE,
+    ASSETS,
+    G10_FX,
+    SHORT_RATES,
+    YIELD_SERIES_US,
+    ECB_MATURITIES,
+    ECB_MATURITY_YEARS,
+    MONTH_CODES,
+    FUTURES_CONTRACTS,
+)
 
 
 def _fetch_fred(symbols, start_date):
@@ -30,115 +42,9 @@ def _fetch_fred(symbols, start_date):
         return pd.DataFrame()
     return pd.concat(frames, axis=1)
 
-# -----------------------------
-# 1. Configuration (Centralized)
-# -----------------------------
-# Updated start date for 2024/25 Academic Year requirements
-START_DATE = "2000-01-01"
-END_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
-
-# Core asset classes
-ASSETS = {
-    # Equities — US
-    "SPY": "S&P 500",
-    "QQQ": "Nasdaq 100",
-    "IWM": "Russell 2000",
-    # Equities — International
-    "^FCHI": "CAC 40",
-    "^FTSE": "FTSE 100",
-    "^GDAXI": "DAX",
-    "^N225": "Nikkei 225",
-    "EFA": "MSCI EAFE",
-    "EEM": "MSCI EM",
-    # Bonds
-    "TLT": "Nominal Bonds",
-    "TIP": "TIPS",
-    # Commodities
-    "GC=F": "Gold",
-    "SI=F": "Silver",
-    "CL=F": "Crude Oil",
-    "NG=F": "Natural Gas",
-    "HG=F": "Copper",
-    "ZW=F": "Wheat",
-    # Dollar
-    "DX-Y.NYB": "Dollar Index",
-}
-
-# G10 FX pairs (all vs USD, Yahoo Finance format)
-G10_FX = {
-    "EURUSD=X": "EUR",
-    "GBPUSD=X": "GBP",
-    "USDJPY=X": "JPY",
-    "USDCHF=X": "CHF",
-    "AUDUSD=X": "AUD",
-    "NZDUSD=X": "NZD",
-    "USDCAD=X": "CAD",
-    "USDNOK=X": "NOK",
-    "USDSEK=X": "SEK",
-}
-
-# G10 short-term interest rates (FRED) — for carry indicator
-# Policy / interbank rates; best available proxies
-SHORT_RATES = {
-    "DFF": "USD",  # US Federal Funds Rate
-    "IRSTCI01JPM156N": "JPY",  # Japan call rate (monthly)
-    "IR3TIB01GBM156N": "GBP",  # UK 3-month interbank rate
-    "ECBDFR": "EUR",  # ECB deposit facility rate
-    "IR3TIB01CAM156N": "CAD",  # Canada 3-month interbank
-    "IR3TIB01CHM156N": "CHF",  # Switzerland 3-month interbank
-    "IR3TIB01AUM156N": "AUD",  # Australia 3-month interbank
-    "IR3TIB01NZM156N": "NZD",  # New Zealand 3-month interbank
-    "IR3TIB01NOM156N": "NOK",  # Norway 3-month interbank
-    "IR3TIB01SEM156N": "SEK",  # Sweden 3-month interbank
-}
-
-# US Treasury yield curve maturities (FRED)
-YIELD_SERIES_US = [
-    "DTB4WK",
-    "DGS3MO",
-    "DGS6MO",
-    "DGS1",
-    "DGS2",
-    "DGS3",
-    "DGS5",
-    "DGS7",
-    "DGS10",
-    "DGS20",
-    "DGS30",
-]
-
-# ECB yield curve maturities to fetch
-ECB_MATURITIES = [
-    "SR_3M",
-    "SR_6M",
-    "SR_1Y",
-    "SR_2Y",
-    "SR_3Y",
-    "SR_5Y",
-    "SR_7Y",
-    "SR_10Y",
-    "SR_15Y",
-    "SR_20Y",
-    "SR_30Y",
-]
-
-# Map ECB maturity codes to numeric years
-ECB_MATURITY_YEARS = {
-    "SR_3M": 0.25,
-    "SR_6M": 0.5,
-    "SR_1Y": 1,
-    "SR_2Y": 2,
-    "SR_3Y": 3,
-    "SR_5Y": 5,
-    "SR_7Y": 7,
-    "SR_10Y": 10,
-    "SR_15Y": 15,
-    "SR_20Y": 20,
-    "SR_30Y": 30,
-}
 
 # -----------------------------
-# 2. Refactored Functions
+# Refactored Functions
 # -----------------------------
 
 
@@ -178,33 +84,6 @@ def process_returns(df):
     returns = cleaned.pct_change().fillna(0)
     cumulative = (1 + returns).cumprod()
     return cumulative
-
-
-# CME month codes: F=Jan, G=Feb, H=Mar, J=Apr, K=May, M=Jun,
-#                  N=Jul, Q=Aug, U=Sep, V=Oct, X=Nov, Z=Dec
-MONTH_CODES = {
-    1: "F",
-    2: "G",
-    3: "H",
-    4: "J",
-    5: "K",
-    6: "M",
-    7: "N",
-    8: "Q",
-    9: "U",
-    10: "V",
-    11: "X",
-    12: "Z",
-}
-
-# Commodity root symbols and their Yahoo Finance exchange suffix
-FUTURES_CONTRACTS = {
-    "Gold": {"root": "GC", "suffix": ".CMX"},
-    "Crude Oil": {"root": "CL", "suffix": ".NYM"},
-    "Wheat": {"root": "ZW", "suffix": ".CBT"},
-    "Dollar": {"root": "DX", "suffix": ".NYB"},
-    "S&P 500": {"root": "ES", "suffix": ".CME"},
-}
 
 
 def fetch_futures_term_structure(n_months=8):
@@ -288,7 +167,7 @@ def fetch_ecb_yield_curves():
 
 
 # -----------------------------
-# 3. Execution Logic (The 'Clean' Workflow)
+# Execution Logic (The 'Clean' Workflow)
 # -----------------------------
 
 

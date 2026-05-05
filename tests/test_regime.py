@@ -4,8 +4,8 @@ No more copied functions or thresholds. Tests import directly from the
 single source of truth.
 """
 
-from core import (
-    classify_regime,
+from dashboard.core import classify_regime
+from dashboard.config import (
     GROWTH_HIGH,
     INFLATION_HIGH,
 )

@@ -1,34 +1,17 @@
-"""Core business logic — regime classification, thresholds, and data loading.
+"""Core business logic — regime classification and data loading.
 
 This module contains NO Streamlit or Plotly dependencies.
 It can be imported by tests and scripts without side effects.
 """
 
 import pandas as pd
-from pathlib import Path
-
-# Resolve the project root and data directory
-# Use __file__ location first, fall back to cwd if data/ not found there
-_FILE_DIR = Path(__file__).resolve().parent
-DATA_DIR = _FILE_DIR / "data" if (_FILE_DIR / "data").exists() else Path.cwd() / "data"
-
-# -----------------------------
-# Regime Classification Thresholds (YoY rates)
-# -----------------------------
-# Calibrated on actual US data: GDP YoY median ~4.5%, CPI YoY median ~2.3%
-GROWTH_HIGH = 0.04  # GDP YoY above 4% = strong growth
-GROWTH_LOW = 0.02  # GDP YoY below 2% = weak growth
-INFLATION_HIGH = 0.03  # CPI YoY above 3% = high inflation
-INFLATION_LOW = 0.025  # CPI YoY below 2.5% = moderate/low inflation
-
-# Regime color palette
-REGIME_COLORS = {
-    "Goldilocks": "#2ecc71",  # green
-    "Overheating": "#e74c3c",  # red
-    "Stagflation": "#e67e22",  # orange
-    "Reflation": "#3498db",  # blue
-    "Deflation": "#9b59b6",  # purple
-}
+from dashboard.config import (
+    DATA_DIR,
+    GROWTH_HIGH,
+    GROWTH_LOW,
+    INFLATION_HIGH,
+    INFLATION_LOW,
+)
 
 
 def classify_regime(row):

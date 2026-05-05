@@ -1,39 +1,31 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "cross-asset-market-regime-monitor"
 version = "0.1.0"
 description = "Dashboard visualizing market performance across asset classes and market regimes, including regime indicators, term structures, and yield curves."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
     { name = "BANDEIRA Frédéric" },
 ]
 
 dependencies = [
-    "pandas",
-    "yfinance",
-    "matplotlib",
-    "streamlit",
-    "plotly",
-    "numpy",
-    "python-dateutil",
-    "setuptools",
-    "requests",
+    "pandas>=2.3,<3",
+    "yfinance>=1.2,<2",
+    "streamlit>=1.54,<2",
+    "plotly>=6.5,<7",
+    "numpy>=2.4,<3",
+    "python-dateutil>=2.9,<3",
+    "requests>=2.32,<3",
 ]
 
-[tool.setuptools]
-packages = []
+[tool.hatch.build.targets.wheel]
+packages = ["src/dashboard"]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest>=9.0,<10",
 ]
-
-[project.optional-dependencies]
-dev = [
-    "pytest",
-]
-

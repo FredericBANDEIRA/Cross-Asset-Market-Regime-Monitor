@@ -46,22 +46,26 @@ cd Cross-Asset-Market-Regime-Monitor
 uv sync
 
 # Fetch data (required on first run)
-uv run python data_collection.py
+uv run python -m dashboard.data_collection
 
 # Launch dashboard
-uv run streamlit run ui_design.py
+uv run streamlit run app.py
 ```
 
 ## Project Structure
 
 ```
-├── core.py               # Business logic (regime thresholds, classification, data loading)
-├── data_collection.py    # Data pipeline (Yahoo, FRED, ECB) → writes to data/
-├── ui_design.py          # Streamlit dashboard (tabbed layout, charts)
-├── data/                 # Generated CSV data files
-├── tests/                # Unit tests (import from core.py)
-├── pyproject.toml        # Dependencies & project config
-└── .github/workflows/    # Daily data refresh (GitHub Actions)
+├── app.py                          # Streamlit application entrypoint
+├── src/dashboard/                  # Python package
+│   ├── config.py                   # Centralized configuration and constants
+│   ├── core.py                     # Business logic (regime classification, data loading)
+│   ├── data_collection.py          # Data pipeline (Yahoo, FRED, ECB) → writes to data/
+│   └── charts/                     # UI components, one module per tab
+├── data/                           # Generated CSV data files
+├── tests/                          # Unit tests
+├── pyproject.toml                  # Dependencies & project config (hatchling build)
+├── uv.lock                         # Pinned dependency lock file
+└── .github/workflows/              # Daily data refresh via GitHub Actions
 ```
 
 ## Regime Definitions

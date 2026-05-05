@@ -1,7 +1,1 @@
-"""Configure sys.path so tests can import project modules."""
-
-import sys
-from pathlib import Path
-
-# Add project root to Python path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+"""Test configuration — no sys.path hacks needed with proper package install."""
