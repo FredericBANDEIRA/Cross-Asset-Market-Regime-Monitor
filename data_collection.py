@@ -1,11 +1,34 @@
 import pandas as pd
 import yfinance as yf
-import pandas_datareader.data as dr
 import datetime
 import io
 import requests
 from dateutil.relativedelta import relativedelta
 from core import DATA_DIR
+
+
+def _fetch_fred(symbols, start_date):
+    """Download FRED series directly via the public CSV endpoint.
+
+    This replaces pandas_datareader, which is broken with pandas >= 2.2.
+    The FRED graph CSV endpoint is free and requires no API key.
+    """
+    frames = []
+    ids = symbols if isinstance(symbols, list) else [symbols]
+    for sid in ids:
+        url = (
+            f"https://fred.stlouisfed.org/graph/fredgraph.csv"
+            f"?id={sid}&cosd={start_date}"
+        )
+        try:
+            df = pd.read_csv(url, index_col=0, parse_dates=True, na_values=["."])
+            df.columns = [sid]
+            frames.append(df)
+        except Exception as e:
+            print(f"  [x] FRED {sid}: {e}")
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, axis=1)
 
 # -----------------------------
 # 1. Configuration (Centralized)
@@ -136,7 +159,7 @@ def fetch_data(tickers, source="yahoo"):
                 df = raw
             return df.rename(columns=tickers)
         elif source == "fred":
-            df = dr.DataReader(tickers, "fred", START_DATE)
+            df = _fetch_fred(tickers, START_DATE)
             return df
         else:
             raise ValueError(f"Unknown data source: {source}")

@@ -15,7 +15,6 @@ authors = [
 dependencies = [
     "pandas",
     "yfinance",
-    "pandas-datareader",
     "matplotlib",
     "streamlit",
     "plotly",
