@@ -2,6 +2,19 @@
   GIT ROUTINE — Cross-Asset Market Regime Monitor
 ========================================
 
+--- CLONING THE PROJECT (NEW COMPUTER) ---
+
+1. Open your terminal or Git Bash.
+2. Navigate to the folder where you want to store the project (e.g., Downloads/Project).
+3. Clone the repository:
+
+     git clone https://github.com/FredericBANDEIRA/Cross-Asset-Market-Regime-Monitor.git
+
+4. Navigate into the folder:
+
+     cd Cross-Asset-Market-Regime-Monitor
+
+
 --- OPENING THE PROJECT ---
 
 1. Pull latest changes (the daily GitHub Action may have pushed new data):

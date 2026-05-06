@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import timedelta
 
 from dashboard.config import REGIME_COLORS
-from dashboard.core import classify_regime, load_and_clean_data
+from dashboard.core import load_and_clean_data
 from dashboard.charts import overview, macro, fixed_income, equities, fx
 
 # -----------------------------
@@ -37,23 +37,17 @@ def load_data():
     indicators,
     fx_rates,
     short_rates,
+    macro_yoy,
 ) = load_data()
 
 # Guard: stop early if asset data is missing
 if cum_returns.empty:
     st.error(
-        "⚠️ **No asset data loaded.** `data/all_data.csv` is empty.\n\n"
+        "⚠️ **No asset data loaded.** `data/all_data.parquet` is empty.\n\n"
         "Run `uv run python -m dashboard.data_collection` to fetch data, then reload."
     )
     st.stop()
 
-# Calculate YoY on MONTHLY-resampled data (GDP is quarterly, CPI monthly)
-# pct_change(12) on daily data with ffill produces mostly zeros
-macro_monthly = macro_raw.resample("ME").last()
-macro_yoy = macro_monthly.pct_change(12).dropna()
-macro_yoy["Regime"] = macro_yoy.apply(classify_regime, axis=1)
-# Reindex to daily for timeline display (forward-fill monthly regimes)
-macro_yoy = macro_yoy.reindex(macro_raw.index, method="ffill").dropna()
 
 # -----------------------------
 # 4. Sidebar Filters

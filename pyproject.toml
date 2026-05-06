@@ -20,6 +20,7 @@ dependencies = [
     "numpy>=2.4,<3",
     "python-dateutil>=2.9,<3",
     "requests>=2.32,<3",
+    "pyarrow>=19.0,<20",
 ]
 
 [tool.hatch.build.targets.wheel]
