@@ -157,7 +157,7 @@ with st.sidebar:
                 [sys.executable, "-m", "dashboard.data_collection"],
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=300,
             )
         if result.returncode == 0:
             st.success("Data refreshed!")
