@@ -329,13 +329,28 @@ def run_pipeline():
 
     # B. Macro & Volatility - SAVE RAW DATA
     logger.info("=== Fetching macro data ===")
-    macro_series = {"CPIAUCNS": "Inflation", "GDP": "Growth", "VIXCLS": "Volatility"}
+    macro_series = {"CPIAUCNS": "Inflation", "GDP": "Growth"}
     macro_data = fetch_data(list(macro_series.keys()), source="fred")
-    macro_clean = macro_data.ffill().dropna()
+    
+    # Fetch VIX from Yahoo Finance instead of FRED due to FRED API instability
+    vix_data = fetch_data({"^VIX": "VIXCLS"}, source="yahoo")
+    
+    if not vix_data.empty:
+        macro_data = macro_data.join(vix_data, how="outer")
+        
+    # Forward fill to propagate quarterly/monthly data to daily rows
+    macro_data = macro_data.ffill()
+    
+    # Drop rows only where the core macro indicators are missing
+    macro_clean = macro_data.dropna(subset=list(macro_series.keys()))
+    
     macro_clean.to_parquet(DATA_DIR / "macro.parquet")
     # Save VIX separately for the dedicated volatility chart
-    macro_clean[["VIXCLS"]].to_parquet(DATA_DIR / "vix.parquet")
-    logger.info("Macro: %d rows saved", len(macro_clean))
+    if "VIXCLS" in macro_clean.columns:
+        macro_clean[["VIXCLS"]].dropna().to_parquet(DATA_DIR / "vix.parquet")
+    else:
+        # Save empty df with correct column if it completely fails
+        pd.DataFrame(columns=["VIXCLS"]).to_parquet(DATA_DIR / "vix.parquet")
 
     # C. US Treasury Yields (FRED)
     logger.info("=== Fetching US Treasury yields ===")
