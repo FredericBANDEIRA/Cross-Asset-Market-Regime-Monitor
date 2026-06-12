@@ -153,18 +153,29 @@ with st.sidebar:
         import sys
 
         with st.spinner("Fetching latest market data..."):
-            result = subprocess.run(
-                [sys.executable, "-m", "dashboard.data_collection"],
-                capture_output=True,
-                text=True,
-                timeout=300,
-            )
-        if result.returncode == 0:
-            st.success("Data refreshed!")
-            st.cache_data.clear()
-            st.rerun()
-        else:
-            st.error(f"Refresh failed: {result.stderr[-200:]}")
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-m", "dashboard.data_collection"],
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
+            except subprocess.TimeoutExpired:
+                st.warning(
+                    "⏳ **Refresh timed out** — the data pipeline is too heavy "
+                    "for Streamlit Cloud's resources.\n\n"
+                    "Data is refreshed automatically every day via GitHub Actions. "
+                    "No action needed."
+                )
+                result = None
+
+        if result is not None:
+            if result.returncode == 0:
+                st.success("Data refreshed!")
+                st.cache_data.clear()
+                st.rerun()
+            else:
+                st.error(f"Refresh failed: {result.stderr[-200:]}")
 
     # --- Export Button ---
     st.divider()
