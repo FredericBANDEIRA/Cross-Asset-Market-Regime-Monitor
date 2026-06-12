@@ -155,7 +155,7 @@ with st.sidebar:
         with st.spinner("Fetching latest market data..."):
             try:
                 result = subprocess.run(
-                    [sys.executable, "-m", "dashboard.data_collection"],
+                    [sys.executable, "-m", "dashboard.data_collection", "--quick"],
                     capture_output=True,
                     text=True,
                     timeout=60,

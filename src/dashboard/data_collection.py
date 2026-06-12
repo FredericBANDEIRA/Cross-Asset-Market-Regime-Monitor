@@ -400,5 +400,47 @@ def run_pipeline():
     logger.info("Pipeline finished. Data updated for %s.", END_DATE)
 
 
+def run_pipeline_quick():
+    """Lightweight refresh — only core datasets (assets, macro, VIX).
+
+    Skips slow FRED-heavy steps (11 yield series, short rates) and
+    futures/ECB so it completes within Streamlit Cloud's limits (~30s).
+    The full pipeline runs daily via GitHub Actions.
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    logger.info("Starting QUICK data refresh (core datasets only)...")
+    DATA_DIR.mkdir(exist_ok=True)
+
+    # A. Financial Assets (Yahoo — fast, single batch request)
+    logger.info("=== Fetching financial assets ===")
+    raw_assets = fetch_data(ASSETS, source="yahoo")
+    asset_performance = process_returns(raw_assets)
+    asset_performance.to_parquet(DATA_DIR / "all_data.parquet")
+    logger.info("Assets: %d rows, %d columns saved", len(asset_performance), asset_performance.shape[1])
+
+    # B. Macro & VIX (2 FRED series + 1 Yahoo ticker)
+    logger.info("=== Fetching macro data ===")
+    macro_series = {"CPIAUCNS": "Inflation", "GDP": "Growth"}
+    macro_data = fetch_data(list(macro_series.keys()), source="fred")
+    vix_data = fetch_data({"^VIX": "VIXCLS"}, source="yahoo")
+    if not vix_data.empty:
+        macro_data = macro_data.join(vix_data, how="outer")
+    macro_data = macro_data.ffill()
+    macro_clean = macro_data.dropna(subset=list(macro_series.keys()))
+    macro_clean.to_parquet(DATA_DIR / "macro.parquet")
+    if "VIXCLS" in macro_clean.columns:
+        macro_clean[["VIXCLS"]].dropna().to_parquet(DATA_DIR / "vix.parquet")
+
+    logger.info("Quick refresh finished. Data updated for %s.", END_DATE)
+
+
 if __name__ == "__main__":
-    run_pipeline()
+    import sys
+    if "--quick" in sys.argv:
+        run_pipeline_quick()
+    else:
+        run_pipeline()
