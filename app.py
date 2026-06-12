@@ -158,7 +158,7 @@ with st.sidebar:
                     [sys.executable, "-m", "dashboard.data_collection"],
                     capture_output=True,
                     text=True,
-                    timeout=300,
+                    timeout=60,
                 )
             except subprocess.TimeoutExpired:
                 st.warning(
