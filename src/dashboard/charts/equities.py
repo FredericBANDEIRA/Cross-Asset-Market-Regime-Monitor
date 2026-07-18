@@ -21,7 +21,7 @@ def render(*, display_assets, selected_assets, selected_regime, futures_ts, cum_
         yaxis_title="Cumulative Return",
         legend=dict(orientation="h", y=-0.15),
     )
-    st.plotly_chart(fig_assets, width="stretch")
+    st.plotly_chart(fig_assets, use_container_width=True)
 
     # Futures Term Structure
     st.divider()
@@ -48,7 +48,7 @@ def render(*, display_assets, selected_assets, selected_regime, futures_ts, cum_
             template=PLOTLY_TEMPLATE,
         )
         fig_term.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(fig_term, width="stretch")
+        st.plotly_chart(fig_term, use_container_width=True)
 
         with st.expander("View raw data"):
             st.dataframe(
@@ -110,7 +110,7 @@ def render(*, display_assets, selected_assets, selected_regime, futures_ts, cum_
                     yaxis_title="Sharpe Ratio",
                     legend=dict(orientation="h", y=-0.15),
                 )
-                st.plotly_chart(fig_sharpe, width="stretch")
+                st.plotly_chart(fig_sharpe, use_container_width=True)
                 st.caption(
                     "Rolling 252-day (1Y) annualized Sharpe ratio. "
                     "Values above 1 indicate strong risk-adjusted returns."

@@ -50,7 +50,7 @@ if cum_returns.empty:
 
 
 # -----------------------------
-# 4. Sidebar Filters
+# 3. Sidebar Filters
 # -----------------------------
 with st.sidebar:
     st.header("Global Settings")
@@ -78,7 +78,7 @@ with st.sidebar:
             "Max",
             "Custom",
         ],
-        index=5,  # Default to "Max"
+        index=5,  # Default to 1 year
     )
 
     # Calculate start date from preset
@@ -202,7 +202,7 @@ else:
     display_assets = cum_returns.loc[start_dt:end_dt]
 
 # -----------------------------
-# 5. KPI Cards & Regime Badge
+# 4. KPI Cards & Regime Badge
 # -----------------------------
 current_regime = macro_yoy["Regime"].iloc[-1] if not macro_yoy.empty else "Unknown"
 regime_color = REGIME_COLORS.get(current_regime, "#95a5a6")
@@ -278,7 +278,7 @@ if selected_regime != "All":
     st.info(f"Showing performance during historical **{selected_regime}** periods.")
 
 # -----------------------------
-# 6. Tabbed Visualizations
+# 5. Tabbed Visualizations
 # -----------------------------
 
 st.divider()

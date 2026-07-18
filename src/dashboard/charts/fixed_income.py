@@ -60,7 +60,7 @@ def render(*, yields_us, ecb_aaa, ecb_all, indicators, start_dt, end_dt):
             template=PLOTLY_TEMPLATE,
         )
         fig_yield.update_layout(xaxis_title="Maturity (Years)", yaxis_title="Yield (%)")
-        st.plotly_chart(fig_yield, width="stretch")
+        st.plotly_chart(fig_yield, use_container_width=True)
 
     # 10Y – 2Y Yield Spread
     if (
@@ -111,7 +111,7 @@ def render(*, yields_us, ecb_aaa, ecb_all, indicators, start_dt, end_dt):
                     opacity=0.15,
                     line_width=0,
                 )
-            st.plotly_chart(fig_spread, width="stretch")
+            st.plotly_chart(fig_spread, use_container_width=True)
             st.caption(
                 "Gray shaded areas indicate NBER recession periods. "
                 "Yield curve inversion (red) has historically preceded recessions."
@@ -148,7 +148,7 @@ def render(*, yields_us, ecb_aaa, ecb_all, indicators, start_dt, end_dt):
                 yaxis_title="Yield Change (pp)",
                 showlegend=False,
             )
-            st.plotly_chart(fig_tp, width="stretch")
+            st.plotly_chart(fig_tp, use_container_width=True)
             st.caption(
                 f"Difference between current yield curve ({latest_date.strftime('%Y-%m-%d')}) "
                 f"and 1Y ago ({nearest_1y.strftime('%Y-%m-%d')}). "
@@ -219,7 +219,7 @@ def render(*, yields_us, ecb_aaa, ecb_all, indicators, start_dt, end_dt):
                 yaxis_title="Yield (%)",
                 legend=dict(orientation="h", y=-0.15),
             )
-            st.plotly_chart(fig_rn, width="stretch")
+            st.plotly_chart(fig_rn, use_container_width=True)
             st.caption(
                 "The shaded area represents breakeven inflation "
                 "(the gap between nominal and real yields)."

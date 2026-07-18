@@ -41,7 +41,7 @@ def render(*, cum_returns, macro_yoy, display_assets, start_dt, end_dt, selected
             legend=dict(orientation="h", y=1.15),
             bargap=0,
         )
-        st.plotly_chart(fig_regime, width="stretch")
+        st.plotly_chart(fig_regime, use_container_width=True)
 
     # Cross-Asset Correlation Matrix
     corr_cols = [c for c in CORR_ASSETS if c in cum_returns.columns]
@@ -66,7 +66,7 @@ def render(*, cum_returns, macro_yoy, display_assets, start_dt, end_dt, selected
                 template=PLOTLY_TEMPLATE,
             )
             fig_corr.update_layout(height=400)
-            st.plotly_chart(fig_corr, width="stretch")
+            st.plotly_chart(fig_corr, use_container_width=True)
         else:
             st.info("Not enough data points for a meaningful correlation matrix.")
     else:
@@ -100,7 +100,7 @@ def render(*, cum_returns, macro_yoy, display_assets, start_dt, end_dt, selected
             margin=dict(l=120, r=60),
         )
         fig_perf.add_vline(x=0, line_dash="dash", line_color="white", opacity=0.3)
-        st.plotly_chart(fig_perf, width="stretch")
+        st.plotly_chart(fig_perf, use_container_width=True)
         st.caption(
             "⚠️ Over long periods (e.g. Max), compounding amplifies differences. "
             "Use the sidebar Time Range filter (e.g. 1Y, 3Y) for more comparable performance."

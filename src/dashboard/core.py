@@ -87,7 +87,7 @@ def load_and_clean_data():
 
     # 2. Asset Data
     try:
-        assets = _read_data_file("all_data", delimiter=";")
+        assets = _read_data_file("all_data")
         assets = assets.ffill().dropna()
         logger.info("Asset data loaded: %d rows, %d assets", len(assets), assets.shape[1])
     except Exception as exc:

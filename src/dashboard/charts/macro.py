@@ -52,7 +52,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
             ),
             legend=dict(orientation="h", y=-0.15),
         )
-        st.plotly_chart(fig_macro, width="stretch")
+        st.plotly_chart(fig_macro, use_container_width=True)
         st.caption(
             "Both series rebased to 100 at period start. GDP updates quarterly (stepped), CPI monthly."
         )
@@ -75,7 +75,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
             annotation_text="High Vol",
             annotation_position="top left",
         )
-        st.plotly_chart(fig_vix, width="stretch")
+        st.plotly_chart(fig_vix, use_container_width=True)
 
     # Breakeven Inflation (full width)
     if not indicators.empty:
@@ -118,7 +118,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
                     yaxis_title="Rate (%)",
                     showlegend=False,
                 )
-                st.plotly_chart(fig_be, width="stretch")
+                st.plotly_chart(fig_be, use_container_width=True)
 
         # Credit Spread (full width)
         if "BAA10Y" in indicators.columns:
@@ -150,7 +150,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
                     yaxis_title="Spread (%)",
                     showlegend=False,
                 )
-                st.plotly_chart(fig_cs, width="stretch")
+                st.plotly_chart(fig_cs, use_container_width=True)
 
         # Fed Funds Rate (full width)
         if "DFF" in indicators.columns:
@@ -176,7 +176,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
                     yaxis_title="Rate (%)",
                     showlegend=False,
                 )
-                st.plotly_chart(fig_ff, width="stretch")
+                st.plotly_chart(fig_ff, use_container_width=True)
 
     # --- Regime Decomposition: GDP vs CPI YoY ---
     st.divider()
@@ -223,7 +223,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
                 yaxis_title="GDP YoY (%)",
                 showlegend=False,
             )
-            st.plotly_chart(fig_gdp, width="stretch")
+            st.plotly_chart(fig_gdp, use_container_width=True)
 
         with dec_col2:
             st.subheader("CPI Inflation (YoY)")
@@ -262,7 +262,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
                 yaxis_title="CPI YoY (%)",
                 showlegend=False,
             )
-            st.plotly_chart(fig_cpi, width="stretch")
+            st.plotly_chart(fig_cpi, use_container_width=True)
 
         st.caption(
             "Dotted lines show the regime classification thresholds. "
@@ -311,7 +311,7 @@ def render(*, macro_trends, vola, indicators, yields_us, macro_yoy, start_dt, en
                 yaxis_title="Real Rate (%)",
                 showlegend=False,
             )
-            st.plotly_chart(fig_real, width="stretch")
+            st.plotly_chart(fig_real, use_container_width=True)
             st.caption(
                 "Real rate = 10Y Treasury yield − CPI YoY%. "
                 "Negative real rates signal accommodative conditions; "

@@ -24,7 +24,7 @@ def render(*, fx_rates, short_rates, start_dt, end_dt):
             ).reset_index(drop=True)
             st.dataframe(
                 fx_summary,
-                width="stretch",
+                use_container_width=True,
                 height=min(350, len(fx_summary) * 35 + 40),
             )
 
@@ -46,7 +46,7 @@ def render(*, fx_rates, short_rates, start_dt, end_dt):
                 yaxis_title="Relative to Start",
                 legend=dict(orientation="h", y=-0.15),
             )
-            st.plotly_chart(fig_fx_perf, width="stretch")
+            st.plotly_chart(fig_fx_perf, use_container_width=True)
             st.caption(
                 "Each G10 currency pair rebased to 1.0 at the start of the selected period. "
                 "Values above 1.0 indicate appreciation vs USD (or USD depreciation for USD-base pairs)."
@@ -81,7 +81,7 @@ def render(*, fx_rates, short_rates, start_dt, end_dt):
                 yaxis_title="Annualized Volatility (%)",
                 legend=dict(orientation="h", y=-0.15),
             )
-            st.plotly_chart(fig_fx_vol, width="stretch")
+            st.plotly_chart(fig_fx_vol, use_container_width=True)
             st.caption(
                 "30-day rolling standard deviation of daily returns, annualized. "
                 "Higher readings indicate larger currency moves."
@@ -123,7 +123,7 @@ def render(*, fx_rates, short_rates, start_dt, end_dt):
                         yaxis_title="",
                         showlegend=False,
                     )
-                    st.plotly_chart(fig_carry, width="stretch")
+                    st.plotly_chart(fig_carry, use_container_width=True)
                     st.caption(
                         f"Short-term interest rate minus US Fed Funds Rate ({usd_rate:.2f}%). "
                         "Positive = higher carry in foreign currency. "
@@ -191,7 +191,7 @@ def render(*, fx_rates, short_rates, start_dt, end_dt):
                     showlegend=False,
                     title=f"Estimated DXY Contribution ({total_dxy_chg:+.2f}% total)",
                 )
-                st.plotly_chart(fig_dxy, width="stretch")
+                st.plotly_chart(fig_dxy, use_container_width=True)
                 st.caption(
                     "Weighted contribution of each currency to the Dollar Index (DXY) move. "
                     "Green = strengthens USD, Red = weakens USD. "
@@ -231,7 +231,7 @@ def render(*, fx_rates, short_rates, start_dt, end_dt):
 
         st.dataframe(
             cross_matrix.style.map(_color_cross_rates).format("{:.4f}"),
-            width="stretch",
+            use_container_width=True,
             height=400,
         )
         st.caption(
